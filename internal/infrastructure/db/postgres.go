@@ -9,9 +9,9 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func ConnectToPostgres(user, password, dbname, host, port string) (*sql.DB, error) {
-	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
-		user, password, dbname, host, port)
+func ConnectToPostgres(user, password, dbname, host, port, sslmode string) (*sql.DB, error) {
+	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=%s",
+		user, password, dbname, host, port, sslmode)
 
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
