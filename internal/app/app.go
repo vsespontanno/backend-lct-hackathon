@@ -20,8 +20,7 @@ func NewApp() *App {
 	if err != nil {
 		log.Printf("failed to connect to config: %v", err)
 	}
-	//	log.Printf("DB_HOST=%s DB_PORT=%s DB_USER=%s DB_NAME=%s",
-	//		cfg.DB.Host, cfg.DB.Port, cfg.DB.Username, cfg.DB.DBName)
+	//	log.Printf("DB_HOST=%s DB_PORT=%s DB_USER=%s DB_NAME=%s", cfg.DB.Host, cfg.DB.Port, cfg.DB.Username, cfg.DB.DBName)
 	dataBase, err := db.ConnectToPostgres(cfg.DB.Username, cfg.DB.Password, cfg.DB.DBName, cfg.DB.Host, cfg.DB.Port, cfg.DB.SSLMode)
 	if err != nil {
 		log.Printf("failed to connect to database: %v", err)
