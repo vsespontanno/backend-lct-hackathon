@@ -4,7 +4,7 @@ import (
 	"black-pearl/backend-hackathon/internal/config"
 	"black-pearl/backend-hackathon/internal/handler"
 	"black-pearl/backend-hackathon/internal/infrastructure/db"
-	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres"
+	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/task"
 	"black-pearl/backend-hackathon/internal/service"
 	"log"
 
@@ -26,7 +26,7 @@ func NewApp() *App {
 		log.Printf("failed to connect to database: %v", err)
 	}
 	r := gin.Default()
-	repo := postgres.NewPostgresRepo(dataBase)
+	repo := task.NewTaskRepo(dataBase)
 	svc := service.NewTaskService(repo)
 	taskHandler := handler.NewTaskHandler(svc)
 	taskHandler.Register(r)
