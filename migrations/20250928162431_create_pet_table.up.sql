@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS pets (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    petName TEXT,
+    age INT DEFAULT 1,
+    exp INT DEFAULT 1,
+    lvl INT DEFAULT 1,
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
