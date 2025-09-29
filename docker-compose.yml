@@ -27,6 +27,17 @@ services:
     env_file:
       - .env
 
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile.seed
+    container_name: seed
+    depends_on:
+      - db
+      - migrate
+    env_file:
+      - .env
+
   app:
     build: .
     container_name: my_go_app
