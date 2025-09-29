@@ -1,12 +1,11 @@
 package interfaces
 
 import (
-	"black-pearl/backend-hackathon/internal/domain/entity"
+	"black-pearl/backend-hackathon/internal/domain/progress/entity"
 	"context"
 )
 
-type Repository interface {
-	GetTaskByID(ctx context.Context, taskID int64) (*entity.Task, error)
+type ProgressRepo interface {
 	GetProgressByID(ctx context.Context, userID int64) (*entity.Progress, error)
 	UpsertProgress(ctx context.Context, progress *entity.Progress) error
 }

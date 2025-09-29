@@ -1,25 +1,20 @@
 package service
 
 import (
-	"black-pearl/backend-hackathon/internal/domain/entity"
-	"black-pearl/backend-hackathon/internal/domain/interfaces"
+	"black-pearl/backend-hackathon/internal/domain/task/entity"
+	"black-pearl/backend-hackathon/internal/domain/task/interfaces"
 	"context"
 )
 
 type TaskService struct {
-	repo interfaces.Repository
+	repo interfaces.TaskInterface
 }
 
-func NewTaskService(repo interfaces.Repository) *TaskService {
+func NewTaskService(repo interfaces.TaskInterface) *TaskService {
 	return &TaskService{repo: repo}
 }
 
 // Временные затычки
 func (s *TaskService) Task(ctx context.Context, taskID int64) (*entity.Task, error) {
-	return nil, nil
-}
-
-// Временные затычки
-func (s *TaskService) Progress(ctx context.Context, taskID int64) (*entity.Progress, error) {
 	return nil, nil
 }
