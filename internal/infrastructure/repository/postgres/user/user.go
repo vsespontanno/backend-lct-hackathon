@@ -24,7 +24,8 @@ func (r *UserRepo) GetUserByID(ctx context.Context, id int) (entity.User, error)
 	builder := r.builder.
 		Select("id").
 		From("users").
-		Where(sq.Eq{"id": id})
+		Where(sq.Eq{"id": id}).
+		Suffix("ON CONFLICT (id) DO NOTHING")
 
 	sqlStr, args, err := builder.ToSql()
 	if err != nil {
