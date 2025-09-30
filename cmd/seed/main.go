@@ -2,7 +2,7 @@ package main
 
 import (
 	"black-pearl/backend-hackathon/internal/config"
-	"black-pearl/backend-hackathon/internal/domain/entity"
+	"black-pearl/backend-hackathon/internal/domain/task/entity"
 	"black-pearl/backend-hackathon/internal/infrastructure/db"
 	"encoding/json"
 	"github.com/lib/pq"
