@@ -5,7 +5,7 @@ import (
 	"context"
 )
 
-type ProgressRepo interface {
+type ProgressRepoInterface interface {
 	GetProgressByID(ctx context.Context, userID int64) (*entity.Progress, error)
 	UpsertProgress(ctx context.Context, progress *entity.Progress) error
 }

@@ -5,7 +5,8 @@ import (
 	"context"
 )
 
-type PetInterface interface {
+type PetRepoInterface interface {
 	GetPetByUserID(ctx context.Context, userID int) (*entity.Pet, error)
-	SetPetName(ctx context.Context, name string, userID int) (bool, error)
+	SetPetName(ctx context.Context, name string, userID int) error
+	CreatePet(ctx context.Context, userID int) error
 }

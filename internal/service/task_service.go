@@ -7,10 +7,10 @@ import (
 )
 
 type TaskService struct {
-	repo interfaces.TaskInterface
+	repo interfaces.TaskRepoInterface
 }
 
-func NewTaskService(repo interfaces.TaskInterface) *TaskService {
+func NewTaskService(repo interfaces.TaskRepoInterface) *TaskService {
 	return &TaskService{repo: repo}
 }
 
