@@ -2,6 +2,7 @@ package handler
 
 import (
 	petEntity "black-pearl/backend-hackathon/internal/domain/pet/entity"
+	prizeEntity "black-pearl/backend-hackathon/internal/domain/prize/entity"
 	taskEntity "black-pearl/backend-hackathon/internal/domain/task/entity"
 	"black-pearl/backend-hackathon/internal/handler/dto"
 	"context"
@@ -11,26 +12,36 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type PrizeServiceInterface interface {
+	AvailablePrizes(ctx context.Context, userID int) (*[]prizeEntity.Prize, error)
+	MyPrizes(ctx context.Context, user_id int) (*[]prizeEntity.Prize, error)
+}
+
 type TaskServiceInterface interface {
-	Task(ctx context.Context, taskID int64) (*taskEntity.Task, error)
+	Task(ctx context.Context, taskID int) (*taskEntity.Task, error)
 }
 
 type PetServiceInterface interface {
+	UpdateXP(ctx context.Context, xp int, userID int) error
 	GetPetByUserID(ctx context.Context, userID int) (*petEntity.Pet, error)
 	SetName(ctx context.Context, name string, userID int) error
 }
 
 type Handler struct {
-	taskSvc TaskServiceInterface
-	petSvc  PetServiceInterface
+	taskSvc  TaskServiceInterface
+	petSvc   PetServiceInterface
+	prizeSvc PrizeServiceInterface
 }
 
-func NewHandler(taskSvc TaskServiceInterface, petSvc PetServiceInterface) *Handler {
-	return &Handler{taskSvc: taskSvc, petSvc: petSvc}
+func NewHandler(taskSvc TaskServiceInterface, petSvc PetServiceInterface, prizeSvc PrizeServiceInterface) *Handler {
+	return &Handler{taskSvc: taskSvc, petSvc: petSvc, prizeSvc: prizeSvc}
 }
 
 func (h *Handler) Register(r *gin.Engine) {
-	r.POST("/pet/{id}", h.PostName)
+	r.GET("/prizes/{id}/my", h.GetMyPrizes)
+	r.POST("/prizes/{id}/available", h.GetAvailablePrizes)
+	r.POST("/pet/xp", h.PostXP)
+	r.POST("/pet/name", h.PostName)
 	r.GET("/pet/{id}", h.GetPet)
 	r.GET("/task/{id}", h.GetTask)
 	r.POST("/tasks/submit", h.SubmitTask)
@@ -38,7 +49,7 @@ func (h *Handler) Register(r *gin.Engine) {
 }
 
 func (h *Handler) GetPet(c *gin.Context) {
-	userIDStr := c.Param("userID")
+	userIDStr := c.Param("id")
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
@@ -56,12 +67,11 @@ func (h *Handler) GetPet(c *gin.Context) {
 		return
 	}
 
-	resp := dto.GetPetReq{
-		ID:    pet.ID,
-		Name:  pet.Name,
-		Age:   pet.Age,
-		Exp:   pet.Exp,
-		Level: pet.Level,
+	resp := dto.GetPetResp{
+		ID:   pet.ID,
+		Name: pet.Name,
+		Age:  pet.Age,
+		Exp:  pet.Exp,
 	}
 
 	c.JSON(http.StatusOK, resp)
@@ -80,6 +90,58 @@ func (h *Handler) PostName(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+}
+
+func (h *Handler) PostXP(c *gin.Context) {
+	var req dto.SendXPReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	err := h.petSvc.UpdateXP(context.Background(), req.Exp, req.UserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
+func (h *Handler) GetMyPrizes(c *gin.Context) {
+	userIDStr := c.Param("id")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	prizes, err := h.prizeSvc.MyPrizes(context.Background(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	var resp dto.GetPrizesResp
+	resp.Prizes = *prizes
+
+	c.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) GetAvailablePrizes(c *gin.Context) {
+	userIDStr := c.Param("id")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	prizes, err := h.prizeSvc.AvailablePrizes(context.Background(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	var resp dto.GetPrizesResp
+	resp.Prizes = *prizes
+
+	c.JSON(http.StatusOK, resp)
 }
 
 // затычка

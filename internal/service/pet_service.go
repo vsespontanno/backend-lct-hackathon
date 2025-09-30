@@ -58,3 +58,11 @@ func (s *PetService) GetPetByUserID(ctx context.Context, userID int) (*entity.Pe
 	}
 	return pet, nil
 }
+
+func (s *PetService) UpdateXP(ctx context.Context, xp int, userID int) error {
+	err := s.petRepo.UpdateXP(ctx, xp, userID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

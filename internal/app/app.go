@@ -5,6 +5,7 @@ import (
 	"black-pearl/backend-hackathon/internal/handler"
 	"black-pearl/backend-hackathon/internal/infrastructure/db"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/pet"
+	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/prize"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/task"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/user"
 	"black-pearl/backend-hackathon/internal/service"
@@ -31,9 +32,11 @@ func NewApp() *App {
 	taskRepo := task.NewTaskRepo(dataBase)
 	petRepo := pet.NewPetRepo(dataBase)
 	userRepo := user.NewUserRepo(dataBase)
+	prizeRepo := prize.NewPrizeRepo(dataBase)
+	prizeSvc := service.NewPrizeService(prizeRepo)
 	taskSvc := service.NewTaskService(taskRepo)
 	petSvc := service.NewPetService(petRepo, userRepo)
-	taskHandler := handler.NewHandler(taskSvc, petSvc)
+	taskHandler := handler.NewHandler(taskSvc, petSvc, prizeSvc)
 	taskHandler.Register(r)
 	return &App{
 		engine: r,

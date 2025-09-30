@@ -4,6 +4,5 @@ CREATE TABLE IF NOT EXISTS pets (
     petName TEXT,
     age INT DEFAULT 1,
     exp INT DEFAULT 1,
-    lvl INT DEFAULT 1,
     updated_at TIMESTAMPTZ DEFAULT now()
 );

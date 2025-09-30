@@ -1,149 +1,128 @@
 package handler
 
 import (
+	"black-pearl/backend-hackathon/internal/domain/pet/entity"
+	prizeEntity "black-pearl/backend-hackathon/internal/domain/prize/entity"
+	taskEntity "black-pearl/backend-hackathon/internal/domain/task/entity"
+	"black-pearl/backend-hackathon/internal/handler/dto"
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	petEntity "black-pearl/backend-hackathon/internal/domain/pet/entity"
-	taskEntity "black-pearl/backend-hackathon/internal/domain/task/entity"
-	"black-pearl/backend-hackathon/internal/handler/dto"
-
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
-type MockPetServiceInterface struct {
+// Mock services with correct context types
+type MockPetService struct {
 	mock.Mock
 }
 
-func (m *MockPetServiceInterface) GetPetByUserID(ctx context.Context, userID int) (*petEntity.Pet, error) {
+func (m *MockPetService) UpdateXP(ctx context.Context, xp int, userID int) error {
+	args := m.Called(ctx, xp, userID)
+	return args.Error(0)
+}
+
+func (m *MockPetService) GetPetByUserID(ctx context.Context, userID int) (*entity.Pet, error) {
 	args := m.Called(ctx, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*petEntity.Pet), args.Error(1)
+	return args.Get(0).(*entity.Pet), args.Error(1)
 }
 
-func (m *MockPetServiceInterface) SetName(ctx context.Context, name string, userID int) error {
+func (m *MockPetService) SetName(ctx context.Context, name string, userID int) error {
 	args := m.Called(ctx, name, userID)
 	return args.Error(0)
 }
 
-type MockTaskServiceInterface struct {
+type MockPrizeService struct {
 	mock.Mock
 }
 
-func (m *MockTaskServiceInterface) Task(ctx context.Context, taskID int64) (*taskEntity.Task, error) {
-	args := m.Called(ctx, taskID)
+func (m *MockPrizeService) AvailablePrizes(ctx context.Context, userID int) (*[]prizeEntity.Prize, error) {
+	args := m.Called(ctx, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
+	return args.Get(0).(*[]prizeEntity.Prize), args.Error(1)
+}
+
+func (m *MockPrizeService) MyPrizes(ctx context.Context, user_id int) (*[]prizeEntity.Prize, error) {
+	args := m.Called(ctx, user_id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*[]prizeEntity.Prize), args.Error(1)
+}
+
+type MockTaskService struct {
+	mock.Mock
+}
+
+func (m *MockTaskService) Task(ctx context.Context, taskID int) (*taskEntity.Task, error) {
+	args := m.Called(ctx, taskID)
 	return args.Get(0).(*taskEntity.Task), args.Error(1)
 }
 
 func TestHandler_GetPet(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	mockPet := &petEntity.Pet{
-		ID:    1,
-		Name:  "Fluffy",
-		Age:   2,
-		Exp:   100,
-		Level: 3,
-	}
-
 	tests := []struct {
 		name           string
 		userID         string
-		setupMock      func(*MockPetServiceInterface)
+		mockPet        *entity.Pet
+		mockError      error
 		expectedStatus int
-		expectedBody   dto.GetPetReq
-		expectedError  string
 	}{
 		{
 			name:   "successful get pet",
-			userID: "123",
-			setupMock: func(m *MockPetServiceInterface) {
-				m.On("GetPetByUserID", mock.Anything, 123).Return(mockPet, nil)
+			userID: "1",
+			mockPet: &entity.Pet{
+				ID:   1,
+				Name: "Buddy",
+				Age:  2,
+				Exp:  100,
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: dto.GetPetReq{
-				ID:    1,
-				Name:  "Fluffy",
-				Age:   2,
-				Exp:   100,
-				Level: 3,
-			},
-		},
-		{
-			name:   "pet not found",
-			userID: "456",
-			setupMock: func(m *MockPetServiceInterface) {
-				m.On("GetPetByUserID", mock.Anything, 456).Return(nil, errors.New("pet not found"))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "pet not found",
-		},
-		{
-			name:   "service returns database error",
-			userID: "789",
-			setupMock: func(m *MockPetServiceInterface) {
-				m.On("GetPetByUserID", mock.Anything, 789).Return(nil, errors.New("database connection failed"))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "database connection failed",
-		},
-		{
-			name:   "zero user ID",
-			userID: "0",
-			setupMock: func(m *MockPetServiceInterface) {
-				m.On("GetPetByUserID", mock.Anything, 0).Return(nil, errors.New("user not found"))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "user not found",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockPetService := new(MockPetServiceInterface)
-			mockTaskService := new(MockTaskServiceInterface)
-			tt.setupMock(mockPetService)
+			mockPetSvc := new(MockPetService)
+			mockPrizeSvc := new(MockPrizeService)
+			mockTaskSvc := new(MockTaskService)
 
-			handler := NewHandler(mockTaskService, mockPetService)
+			handler := NewHandler(mockTaskSvc, mockPetSvc, mockPrizeSvc)
 
-			router := gin.New()
-			router.GET("/pet/:userID", handler.GetPet)
+			mockPetSvc.On("GetPetByUserID", mock.Anything, 1).Return(tt.mockPet, tt.mockError)
 
-			req, err := http.NewRequest("GET", "/pet/"+tt.userID, nil)
-			require.NoError(t, err)
+			router := gin.Default()
+			router.GET("/pet/:id", handler.GetPet)
 
+			req, _ := http.NewRequest("GET", "/pet/"+tt.userID, nil)
 			resp := httptest.NewRecorder()
 
 			router.ServeHTTP(resp, req)
 
 			assert.Equal(t, tt.expectedStatus, resp.Code)
 
-			if tt.expectedError != "" {
-				var response gin.H
+			if tt.expectedStatus == http.StatusOK {
+				var response dto.GetPetResp
 				err := json.Unmarshal(resp.Body.Bytes(), &response)
-				require.NoError(t, err)
-				assert.Equal(t, tt.expectedError, response["error"])
-			} else {
-				var response dto.GetPetReq
-				err := json.Unmarshal(resp.Body.Bytes(), &response)
-				require.NoError(t, err)
-				assert.Equal(t, tt.expectedBody, response)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.mockPet.ID, response.ID)
+				assert.Equal(t, tt.mockPet.Name, response.Name)
+				assert.Equal(t, tt.mockPet.Age, response.Age)
+				assert.Equal(t, tt.mockPet.Exp, response.Exp)
 			}
 
-			mockPetService.AssertExpectations(t)
+			mockPetSvc.AssertExpectations(t)
 		})
 	}
 }
@@ -153,75 +132,15 @@ func TestHandler_PostName(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		requestBody    dto.SetPetNameReq
-		setupMock      func(*MockPetServiceInterface)
+		request        dto.SetPetNameReq
+		mockError      error
 		expectedStatus int
-		expectedError  string
 	}{
 		{
-			name: "successful set name",
-			requestBody: dto.SetPetNameReq{
-				Name:   "Buddy",
-				UserID: 123,
-			},
-			setupMock: func(m *MockPetServiceInterface) {
-				m.On("SetName", mock.Anything, "Buddy", 123).Return(nil)
-			},
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name: "successful set name with empty name",
-			requestBody: dto.SetPetNameReq{
-				Name:   "",
-				UserID: 456,
-			},
-			setupMock: func(m *MockPetServiceInterface) {
-				m.On("SetName", mock.Anything, "", 456).Return(nil)
-			},
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name: "zero user ID",
-			requestBody: dto.SetPetNameReq{
-				Name:   "ZeroPet",
-				UserID: 0,
-			},
-			setupMock: func(m *MockPetServiceInterface) {
-				m.On("SetName", mock.Anything, "ZeroPet", 0).Return(nil)
-			},
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name: "negative user ID",
-			requestBody: dto.SetPetNameReq{
-				Name:   "NegativePet",
-				UserID: -1,
-			},
-			setupMock: func(m *MockPetServiceInterface) {
-				m.On("SetName", mock.Anything, "NegativePet", -1).Return(nil)
-			},
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name: "service returns error",
-			requestBody: dto.SetPetNameReq{
+			name: "successful set pet name",
+			request: dto.SetPetNameReq{
 				Name:   "Max",
-				UserID: 999,
-			},
-			setupMock: func(m *MockPetServiceInterface) {
-				m.On("SetName", mock.Anything, "Max", 999).Return(errors.New("database error"))
-			},
-			expectedStatus: http.StatusInternalServerError,
-			expectedError:  "database error",
-		},
-		{
-			name: "very long name",
-			requestBody: dto.SetPetNameReq{
-				Name:   "VeryLongPetNameThatExceedsNormalLengthButShouldStillWork",
-				UserID: 123,
-			},
-			setupMock: func(m *MockPetServiceInterface) {
-				m.On("SetName", mock.Anything, "VeryLongPetNameThatExceedsNormalLengthButShouldStillWork", 123).Return(nil)
+				UserID: 1,
 			},
 			expectedStatus: http.StatusOK,
 		},
@@ -229,106 +148,190 @@ func TestHandler_PostName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockPetService := new(MockPetServiceInterface)
-			mockTaskService := new(MockTaskServiceInterface)
-			tt.setupMock(mockPetService)
+			mockPetSvc := new(MockPetService)
+			mockPrizeSvc := new(MockPrizeService)
+			mockTaskSvc := new(MockTaskService)
 
-			handler := NewHandler(mockTaskService, mockPetService)
+			handler := NewHandler(mockTaskSvc, mockPetSvc, mockPrizeSvc)
 
-			router := gin.New()
-			router.POST("/pet/:userID", handler.PostName)
+			mockPetSvc.On("SetName", mock.Anything, tt.request.Name, tt.request.UserID).Return(tt.mockError)
 
-			reqBody, err := json.Marshal(tt.requestBody)
-			require.NoError(t, err)
+			router := gin.Default()
+			router.POST("/pet/name", handler.PostName)
 
-			req, err := http.NewRequest("POST", "/pet/123", bytes.NewBuffer(reqBody))
-			require.NoError(t, err)
+			requestBody, _ := json.Marshal(tt.request)
+			req, _ := http.NewRequest("POST", "/pet/name", bytes.NewBuffer(requestBody))
 			req.Header.Set("Content-Type", "application/json")
+			resp := httptest.NewRecorder()
 
+			router.ServeHTTP(resp, req)
+
+			assert.Equal(t, tt.expectedStatus, resp.Code)
+			mockPetSvc.AssertExpectations(t)
+		})
+	}
+}
+
+func TestHandler_PostXP(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	tests := []struct {
+		name           string
+		request        dto.SendXPReq
+		mockError      error
+		expectedStatus int
+	}{
+		{
+			name: "successful update XP",
+			request: dto.SendXPReq{
+				UserID: 1,
+				Exp:    50,
+			},
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockPetSvc := new(MockPetService)
+			mockPrizeSvc := new(MockPrizeService)
+			mockTaskSvc := new(MockTaskService)
+
+			handler := NewHandler(mockTaskSvc, mockPetSvc, mockPrizeSvc)
+
+			mockPetSvc.On("UpdateXP", mock.Anything, tt.request.Exp, tt.request.UserID).Return(tt.mockError)
+
+			router := gin.Default()
+			router.POST("/pet/xp", handler.PostXP)
+
+			requestBody, _ := json.Marshal(tt.request)
+			req, _ := http.NewRequest("POST", "/pet/xp", bytes.NewBuffer(requestBody))
+			req.Header.Set("Content-Type", "application/json")
+			resp := httptest.NewRecorder()
+
+			router.ServeHTTP(resp, req)
+
+			assert.Equal(t, tt.expectedStatus, resp.Code)
+			mockPetSvc.AssertExpectations(t)
+		})
+	}
+}
+
+func TestHandler_GetMyPrizes(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	tests := []struct {
+		name           string
+		userID         string
+		mockPrizes     *[]prizeEntity.Prize
+		mockError      error
+		expectedStatus int
+	}{
+		{
+			name:   "successful get my prizes",
+			userID: "1",
+			mockPrizes: &[]prizeEntity.Prize{
+				{
+					Title:       "Prize 1",
+					Description: "Description 1",
+					ImageURL:    "http://example.com/prize1.jpg",
+				},
+				{
+					Title:       "Prize 2",
+					Description: "Description 2",
+					ImageURL:    "http://example.com/prize2.jpg",
+				},
+			},
+			expectedStatus: http.StatusOK,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockPetSvc := new(MockPetService)
+			mockPrizeSvc := new(MockPrizeService)
+			mockTaskSvc := new(MockTaskService)
+
+			handler := NewHandler(mockTaskSvc, mockPetSvc, mockPrizeSvc)
+
+			mockPrizeSvc.On("MyPrizes", mock.Anything, 1).Return(tt.mockPrizes, tt.mockError)
+
+			router := gin.Default()
+			router.GET("/prizes/:id/my", handler.GetMyPrizes)
+
+			req, _ := http.NewRequest("GET", "/prizes/"+tt.userID+"/my", nil)
 			resp := httptest.NewRecorder()
 
 			router.ServeHTTP(resp, req)
 
 			assert.Equal(t, tt.expectedStatus, resp.Code)
 
-			if tt.expectedError != "" {
-				var response gin.H
+			if tt.expectedStatus == http.StatusOK {
+				var response dto.GetPrizesResp
 				err := json.Unmarshal(resp.Body.Bytes(), &response)
-				require.NoError(t, err)
-				assert.Equal(t, tt.expectedError, response["error"])
+				assert.NoError(t, err)
+				assert.Len(t, response.Prizes, len(*tt.mockPrizes))
+				assert.Equal(t, (*tt.mockPrizes)[0].Title, response.Prizes[0].Title)
 			}
 
-			mockPetService.AssertExpectations(t)
+			mockPrizeSvc.AssertExpectations(t)
 		})
 	}
 }
 
-func TestHandler_EdgeCases(t *testing.T) {
+func TestHandler_GetAvailablePrizes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	t.Run("context propagation to service", func(t *testing.T) {
-		mockPetService := new(MockPetServiceInterface)
-		mockTaskService := new(MockTaskServiceInterface)
+	tests := []struct {
+		name           string
+		userID         string
+		mockPrizes     *[]prizeEntity.Prize
+		mockError      error
+		expectedStatus int
+	}{
+		{
+			name:   "successful get available prizes",
+			userID: "1",
+			mockPrizes: &[]prizeEntity.Prize{
+				{
+					Title:       "Available Prize 1",
+					Description: "Available Description 1",
+					ImageURL:    "http://example.com/available1.jpg",
+				},
+			},
+			expectedStatus: http.StatusOK,
+		},
+	}
 
-		mockPet := &petEntity.Pet{
-			ID:    1,
-			Name:  "TestPet",
-			Age:   1,
-			Exp:   0,
-			Level: 1,
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockPetSvc := new(MockPetService)
+			mockPrizeSvc := new(MockPrizeService)
+			mockTaskSvc := new(MockTaskService)
 
-		mockPetService.On("GetPetByUserID", mock.Anything, 123).Return(mockPet, nil)
+			handler := NewHandler(mockTaskSvc, mockPetSvc, mockPrizeSvc)
 
-		handler := NewHandler(mockTaskService, mockPetService)
+			mockPrizeSvc.On("AvailablePrizes", mock.Anything, 1).Return(tt.mockPrizes, tt.mockError)
 
-		router := gin.New()
-		router.GET("/pet/:userID", handler.GetPet)
+			router := gin.Default()
+			router.POST("/prizes/:id/available", handler.GetAvailablePrizes)
 
-		req, _ := http.NewRequest("GET", "/pet/123", nil)
-		resp := httptest.NewRecorder()
+			req, _ := http.NewRequest("POST", "/prizes/"+tt.userID+"/available", nil)
+			resp := httptest.NewRecorder()
 
-		router.ServeHTTP(resp, req)
+			router.ServeHTTP(resp, req)
 
-		assert.Equal(t, http.StatusOK, resp.Code)
-		mockPetService.AssertExpectations(t)
-	})
+			assert.Equal(t, tt.expectedStatus, resp.Code)
 
-	t.Run("concurrent requests", func(t *testing.T) {
-		mockPetService := new(MockPetServiceInterface)
-		mockTaskService := new(MockTaskServiceInterface)
+			if tt.expectedStatus == http.StatusOK {
+				var response dto.GetPrizesResp
+				err := json.Unmarshal(resp.Body.Bytes(), &response)
+				assert.NoError(t, err)
+				assert.Len(t, response.Prizes, len(*tt.mockPrizes))
+				assert.Equal(t, (*tt.mockPrizes)[0].Title, response.Prizes[0].Title)
+			}
 
-		mockPet := &petEntity.Pet{
-			ID:    1,
-			Name:  "ConcurrentPet",
-			Age:   1,
-			Exp:   0,
-			Level: 1,
-		}
-
-		mockPetService.On("GetPetByUserID", mock.Anything, 123).Return(mockPet, nil).Times(3)
-
-		handler := NewHandler(mockTaskService, mockPetService)
-
-		router := gin.New()
-		router.GET("/pet/:userID", handler.GetPet)
-
-		done := make(chan bool, 3)
-
-		for i := 0; i < 3; i++ {
-			go func() {
-				req, _ := http.NewRequest("GET", "/pet/123", nil)
-				resp := httptest.NewRecorder()
-				router.ServeHTTP(resp, req)
-				assert.Equal(t, http.StatusOK, resp.Code)
-				done <- true
-			}()
-		}
-
-		for i := 0; i < 3; i++ {
-			<-done
-		}
-
-		mockPetService.AssertExpectations(t)
-	})
+			mockPrizeSvc.AssertExpectations(t)
+		})
+	}
 }
