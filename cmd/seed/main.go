@@ -5,8 +5,8 @@ import (
 	"black-pearl/backend-hackathon/internal/domain/quiz/entity"
 	"black-pearl/backend-hackathon/internal/infrastructure/db"
 	"encoding/json"
-	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/lib/pq"
 )
@@ -23,7 +23,7 @@ func main() {
 		log.Printf("failed to connect to database: %v", err)
 		return
 	}
-	data, err := ioutil.ReadFile("seed/quizs.json")
+	data, err := os.ReadFile("seed/quizs.json")
 	if err != nil {
 		log.Fatalf("failed to read seed/quizs.json: %v", err)
 		return

@@ -7,8 +7,9 @@ import (
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/pet"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/prize"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/quiz"
-	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/sectionItems"
+	sectionitems "black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/sectionItems"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/sections"
+	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/task"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/theory"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/user"
 	"black-pearl/backend-hackathon/internal/service"
@@ -38,25 +39,40 @@ func NewApp() *App {
 	r := gin.Default()
 	logger.Log.Infow("initialized gin-router", "stage", "gin.Default")
 	quizRepo := quiz.NewQuizRepo(dataBase)
+	logger.Log.Infow("initialized quiz repository", "stage", "quizRepo")
 	petRepo := pet.NewPetRepo(dataBase)
+	logger.Log.Infow("initialized pet repository", "stage", "petRepo")
 	userRepo := user.NewUserRepo(dataBase)
+	logger.Log.Infow("initialized user repository", "stage", "userRepo")
+	theoryRepo := theory.NewTheoryRepo(dataBase)
+	logger.Log.Infow("initialized theory repository", "stage", "theoryRepo")
+	taskRepo := task.NewTaskRepo(dataBase, logger.Log)
+	logger.Log.Infow("initialized task repository", "stage", "taskRepo")
+	sectionItemsRepo := sectionitems.NewSectionItemsRepo(dataBase)
+	logger.Log.Infow("initialized section items repository", "stage", "sectionItemsRepo")
 	prizeRepo := prize.NewPrizeRepo(dataBase)
 	logger.Log.Infow("initialized repositories", "stage", "repositories")
-	prizeSvc := service.NewPrizeService(prizeRepo, logger.Log)
-	petSvc := service.NewPetService(petRepo, userRepo, logger.Log)
-	logger.Log.Infow("initialized services", "stage", "services")
 	sectionRepo := sections.NewSectionsRepo(dataBase)
-	sectionItemsRepo := sectionitems.NewSectionItemsRepo(dataBase)
-	theoryRepo := theory.NewTheoryRepo(dataBase)
+	logger.Log.Infow("initialized sections repository", "stage", "sectionRepo")
+	prizeSvc := service.NewPrizeService(prizeRepo, logger.Log)
+	logger.Log.Infow("initialized prize service", "stage", "prizeSvc")
+	petSvc := service.NewPetService(petRepo, userRepo, logger.Log)
+	logger.Log.Infow("initialized pet service", "stage", "petSvc")
 	quizSvc := service.NewQuizService(quizRepo, logger.Log)
+	logger.Log.Infow("initialized quiz service", "stage", "quizSvc")
 	sectionSvc := service.NewSectionService(sectionRepo, logger.Log)
+	logger.Log.Infow("initialized section service", "stage", "sectionSvc")
 	if sectionSvc == nil {
 		logger.Log.Errorw("sectionSvc is nil", "stage", "NewSectionService")
 		return nil
 	}
 	sectionItemsSvc := service.NewSectionItemsService(sectionItemsRepo, logger.Log)
+	logger.Log.Infow("initialized section items service", "stage", "sectionItemsSvc")
 	theorySvc := service.NewTheoryService(theoryRepo, logger.Log)
-	quizHandler := handler.NewHandler(quizSvc, petSvc, sectionSvc, sectionItemsSvc, theorySvc, prizeSvc, logger.Log)
+	logger.Log.Infow("initialized theory service", "stage", "theorySvc")
+	taskSvc := service.NewTaskService(taskRepo, logger.Log)
+	logger.Log.Infow("initialized task service", "stage", "taskSvc")
+	quizHandler := handler.NewHandler(quizSvc, petSvc, sectionSvc, sectionItemsSvc, theorySvc, prizeSvc, taskSvc, logger.Log)
 
 	logger.Log.Infow("initialized handlers", "stage", "handlers")
 	quizHandler.Register(r)

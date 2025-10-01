@@ -1,26 +1,16 @@
-# Этап сборки
-FROM golang:1.24.0-alpine AS builder
-
+# builder
+FROM golang:1.24 AS builder
 WORKDIR /app
-
-# Скопировать go.mod и go.sum, подтянуть зависимости
 COPY go.mod go.sum ./
 RUN go mod download
-
-# Скопировать исходники
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/bin/app ./cmd/server
 
-# Собрать бинарник
-RUN go build -o main ./cmd/server
-
-# Этап запуска
-FROM alpine:3.19
-
+# runtime
+FROM gcr.io/distroless/cc-debian11
 WORKDIR /app
-COPY --from=builder /app/main .
-
-# Если нужно, подтянем .env внутрь контейнера
+# Копируем .env файл в контейнер
 COPY .env .env
-
+COPY --from=builder /app/bin/app /app/app
 EXPOSE 8080
-CMD ["./main"]
+CMD ["/app/app"]

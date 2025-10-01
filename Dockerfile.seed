@@ -1,19 +1,18 @@
-# Этап сборки
 FROM golang:1.24-alpine AS builder
-WORKDIR /app
 
+WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN go build -o seed-app ./cmd/seed
 
-# Этап запуска
-FROM alpine:3.19
+RUN CGO_ENABLED=0 go build -o /app/seed_binary ./cmd/seed
+
+FROM gcr.io/distroless/base-debian12
 WORKDIR /app
 
-COPY --from=builder /app/seed-app .
-COPY seed ./seed
-COPY .env .env
+COPY --from=builder /app/seed_binary /app/seed_app
 
-CMD ["./seed-app"]
+USER nonroot:nonroot
+
+CMD ["/app/seed_app"]

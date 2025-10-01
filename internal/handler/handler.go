@@ -6,11 +6,13 @@ import (
 	quizEntity "black-pearl/backend-hackathon/internal/domain/quiz/entity"
 	sectionItemsEntity "black-pearl/backend-hackathon/internal/domain/sectionItems/entity"
 	sectionEntity "black-pearl/backend-hackathon/internal/domain/sections/entity"
+	taskEntity "black-pearl/backend-hackathon/internal/domain/task/entity"
 	theoryEntity "black-pearl/backend-hackathon/internal/domain/theory/entity"
 	"black-pearl/backend-hackathon/internal/handler/dto"
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -46,6 +48,10 @@ type TheoryServiceInterface interface {
 	NewTheory(ctx context.Context, title, content string) (*theoryEntity.Theory, error)
 }
 
+type TaskServiceInterface interface {
+	GetTasks(ctx context.Context) (*[]taskEntity.Task, error)
+}
+
 type Handler struct {
 	quizSvc         QuizServiceInterface
 	petSvc          PetServiceInterface
@@ -53,6 +59,7 @@ type Handler struct {
 	sectionItemsSvc SectionItemsServiceInterface
 	theorySvc       TheoryServiceInterface
 	prizeSvc        PrizeServiceInterface
+	taskSvc         TaskServiceInterface
 	logger          *zap.SugaredLogger
 }
 
@@ -63,6 +70,7 @@ func NewHandler(
 	sectionItemsSvc SectionItemsServiceInterface,
 	theorySvc TheoryServiceInterface,
 	prizeSvc PrizeServiceInterface,
+	taskSvc TaskServiceInterface,
 	logger *zap.SugaredLogger,
 ) *Handler {
 	return &Handler{
@@ -72,6 +80,7 @@ func NewHandler(
 		sectionItemsSvc: sectionItemsSvc,
 		theorySvc:       theorySvc,
 		prizeSvc:        prizeSvc,
+		taskSvc:         taskSvc,
 		logger:          logger,
 	}
 }
@@ -93,6 +102,8 @@ func (h *Handler) Register(r *gin.Engine) {
 	r.POST("/pet/xp", h.PostXP)
 	r.POST("/pet/name", h.PostName)
 	r.GET("/pet/{id}", h.GetPet)
+
+	r.GET("/tasks/daily", h.GetDailyTasks)
 }
 
 func (h *Handler) GetPet(c *gin.Context) {
@@ -359,4 +370,23 @@ func (h *Handler) GetQuiz(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, quiz)
+}
+
+func (h *Handler) GetDailyTasks(c *gin.Context) {
+	tasks, err := h.taskSvc.GetTasks(c.Request.Context())
+	if err != nil {
+		h.logger.Errorw("failed to get tasks", "error", err, "stage", "GetTasks.GetTasks")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	today := time.Now().Day()
+	var result []taskEntity.Task
+	for _, task := range *tasks {
+		if task.ID == today {
+			result = append(result, task)
+		}
+	}
+
+	c.JSON(http.StatusOK, result)
 }

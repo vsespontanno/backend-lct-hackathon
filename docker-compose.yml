@@ -1,8 +1,10 @@
+version: "3.9"
+
 services:
   db:
     image: postgres:15
-    container_name: my_postgres
-    restart: unless-stopped
+    container_name: postgres_hackathon
+    restart: always
     environment:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -11,12 +13,17 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
+      interval: 5s
+      retries: 10
 
   migrate:
     image: migrate/migrate
-    container_name: my_migrate
+    container_name: migrate_hackathon
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./migrations:/migrations
     command: [
@@ -27,28 +34,29 @@ services:
     env_file:
       - .env
 
-  seed:
+  app:
     build:
       context: .
-      dockerfile: Dockerfile.seed
-    container_name: seed
+      dockerfile: Dockerfile
+    container_name: app_hackathon
     depends_on:
-      - db
-      - migrate
-    env_file:
-      - .env
-
-  app:
-    build: .
-    container_name: my_go_app
-    restart: unless-stopped
-    depends_on:
-      - db
       - migrate
     env_file:
       - .env
     ports:
       - "8080:8080"
+
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile.seed
+    container_name: seed_hackathon
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    restart: "no" # сидер отработал и завершился
 
 volumes:
   pgdata:

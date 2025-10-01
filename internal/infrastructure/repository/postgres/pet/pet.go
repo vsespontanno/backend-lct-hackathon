@@ -23,7 +23,7 @@ func NewPetRepo(db *sql.DB) *PetRepo {
 
 func (r *PetRepo) GetPetByUserID(ctx context.Context, userID int) (*entity.Pet, error) {
 	builder := r.builder.
-		Select("id", "petName", "age", "exp", "lvl").
+		Select("id", "petName", "age", "exp").
 		From("pets").
 		Where(sq.Eq{"user_id": userID})
 
@@ -65,7 +65,7 @@ func (r *PetRepo) SetPetName(ctx context.Context, name string, userID int) error
 func (r *PetRepo) CreatePet(ctx context.Context, userID int) error {
 	builder := r.builder.
 		Insert("pets").
-		Columns("user_id", "petName", "age", "exp", "lvl").
+		Columns("user_id", "petName", "age", "exp").
 		Values(userID, "", 0, 0, 1)
 
 	sqlStr, args, err := builder.ToSql()
