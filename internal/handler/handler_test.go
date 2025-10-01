@@ -40,12 +40,12 @@ type MockTaskServiceInterface struct {
 	mock.Mock
 }
 
-func (m *MockTaskServiceInterface) Task(ctx context.Context, taskID int64) (*taskEntity.Quiz, error) {
+func (m *MockTaskServiceInterface) Task(ctx context.Context, taskID int64) (*taskEntity.Task, error) {
 	args := m.Called(ctx, taskID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*taskEntity.Quiz), args.Error(1)
+	return args.Get(0).(*taskEntity.Task), args.Error(1)
 }
 
 func TestHandler_GetPet(t *testing.T) {

@@ -28,7 +28,7 @@ func main() {
 		return
 	}
 
-	var tasks []entity.Quiz
+	var tasks []entity.Task
 	err = json.Unmarshal(data, &tasks)
 	if err != nil {
 		log.Fatalf("failed to parse seed/tasks.json: %v", err)

@@ -23,10 +23,10 @@ func NewTaskRepo(db *sql.DB) *TaskRepo {
 	}
 }
 
-func (r *TaskRepo) GetTaskByID(ctx context.Context, taskID int64) (*entity.Quiz, error) {
+func (r *TaskRepo) GetTaskByID(ctx context.Context, taskID int64) (*entity.Task, error) {
 	sqlStr := `SELECT id, title, content, options, correct_answer FROM tasks WHERE id = $1`
 
-	var task entity.Quiz
+	var task entity.Task
 	var options pq.StringArray
 
 	row := r.db.QueryRowContext(ctx, sqlStr, taskID)
@@ -42,7 +42,7 @@ func (r *TaskRepo) GetTaskByID(ctx context.Context, taskID int64) (*entity.Quiz,
 	return &task, nil
 }
 
-func (r *TaskRepo) InsertTask(ctx context.Context, task *entity.Quiz) error {
+func (r *TaskRepo) InsertTask(ctx context.Context, task *entity.Task) error {
 	sqlStr := `INSERT INTO tasks (title, content, options, correct_answer) VALUES ($1, $2, $3, $4)`
 	_, err := r.db.ExecContext(ctx, sqlStr, task.Title, task.Content, pq.Array(task.Options), task.CorrectAnswer)
 	return err

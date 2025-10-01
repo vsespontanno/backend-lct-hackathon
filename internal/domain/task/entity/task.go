@@ -1,7 +1,7 @@
 package entity
 
 // Структура даваемых задач, после прочтения текста
-type Quiz struct {
+type Task struct {
 	ID            int64    `json:"id"`
 	Title         string   `json:"title"`
 	Content       string   `json:"content"`

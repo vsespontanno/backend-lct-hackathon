@@ -6,6 +6,6 @@ import (
 )
 
 type TaskRepoInterface interface {
-	GetTaskByID(ctx context.Context, taskID int64) (*entity.Quiz, error)
-	InsertTask(ctx context.Context, task *entity.Quiz) error
+	GetTaskByID(ctx context.Context, taskID int64) (*entity.Task, error)
+	InsertTask(ctx context.Context, task *entity.Task) error
 }

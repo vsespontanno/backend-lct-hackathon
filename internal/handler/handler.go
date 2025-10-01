@@ -16,7 +16,7 @@ import (
 )
 
 type TaskServiceInterface interface {
-	GetTask(ctx context.Context, taskID int64) (*taskEntity.Quiz, error)
+	GetTask(ctx context.Context, taskID int64) (*taskEntity.Task, error)
 }
 
 type PetServiceInterface interface {
