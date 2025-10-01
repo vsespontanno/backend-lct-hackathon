@@ -4,14 +4,17 @@ import (
 	"black-pearl/backend-hackathon/internal/domain/prize/entity"
 	"black-pearl/backend-hackathon/internal/domain/prize/interfaces"
 	"context"
+
+	"go.uber.org/zap"
 )
 
 type PrizeService struct {
-	repo interfaces.PrizeRepoInterface
+	repo   interfaces.PrizeRepoInterface
+	logger *zap.SugaredLogger
 }
 
-func NewPrizeService(repo interfaces.PrizeRepoInterface) *PrizeService {
-	return &PrizeService{repo: repo}
+func NewPrizeService(repo interfaces.PrizeRepoInterface, logger *zap.SugaredLogger) *PrizeService {
+	return &PrizeService{repo: repo, logger: logger}
 }
 
 func (s *PrizeService) MyPrizes(ctx context.Context, userID int) (*[]entity.Prize, error) {
