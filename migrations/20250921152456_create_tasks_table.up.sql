@@ -3,6 +3,5 @@ CREATE TABLE IF NOT EXISTS tasks (
     title TEXT NOT NULL ,
     content TEXT NOT NULL ,
     options TEXT[] NOT NUll ,
-    correct_answer TEXT NOT NULL ,
-    progress INT NOT NULL DEFAULT 0
+    correct_answer TEXT NOT NULL 
 );

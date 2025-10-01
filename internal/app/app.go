@@ -5,7 +5,10 @@ import (
 	"black-pearl/backend-hackathon/internal/handler"
 	"black-pearl/backend-hackathon/internal/infrastructure/db"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/pet"
+	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/sectionItems"
+	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/sections"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/task"
+	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/theory"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/user"
 	"black-pearl/backend-hackathon/internal/service"
 	"log"
@@ -31,9 +34,18 @@ func NewApp() *App {
 	taskRepo := task.NewTaskRepo(dataBase)
 	petRepo := pet.NewPetRepo(dataBase)
 	userRepo := user.NewUserRepo(dataBase)
+	sectionRepo := sections.NewSectionsRepo(dataBase)
+	sectionItemsRepo := sectionitems.NewSectionItemsRepo(dataBase)
+	theoryRepo := theory.NewTheoryRepo(dataBase)
 	taskSvc := service.NewTaskService(taskRepo)
 	petSvc := service.NewPetService(petRepo, userRepo)
-	taskHandler := handler.NewHandler(taskSvc, petSvc)
+	sectionSvc := service.NewSectionService(sectionRepo)
+	if sectionSvc == nil {
+		log.Fatal("failed to initialize sectionSvc")
+	}
+	sectionItemsSvc := service.NewSectionItemsService(sectionItemsRepo)
+	theorySvc := service.NewTheoryService(theoryRepo)
+	taskHandler := handler.NewHandler(taskSvc, petSvc, sectionSvc, sectionItemsSvc, theorySvc)
 	taskHandler.Register(r)
 	return &App{
 		engine: r,

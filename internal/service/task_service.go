@@ -15,6 +15,10 @@ func NewTaskService(repo interfaces.TaskRepoInterface) *TaskService {
 }
 
 // Временные затычки
-func (s *TaskService) Task(ctx context.Context, taskID int64) (*entity.Task, error) {
-	return nil, nil
+func (s *TaskService) GetTask(ctx context.Context, taskID int64) (*entity.Quiz, error) {
+	task, err := s.repo.GetTaskByID(ctx, taskID)
+	if err != nil {
+		return nil, err
+	}
+	return task, err
 }

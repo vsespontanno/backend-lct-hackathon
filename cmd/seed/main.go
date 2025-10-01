@@ -28,7 +28,7 @@ func main() {
 		return
 	}
 
-	var tasks []entity.Task
+	var tasks []entity.Quiz
 	err = json.Unmarshal(data, &tasks)
 	if err != nil {
 		log.Fatalf("failed to parse seed/tasks.json: %v", err)
@@ -45,8 +45,8 @@ func main() {
 			continue
 		}
 		_, err := db.Exec(
-			"INSERT INTO tasks (id, title, content, options, correct_answer, progress) VALUES ($1, $2, $3, $4, $5, $6)",
-			task.ID, task.Title, task.Content, pq.Array(task.Options), task.CorrectAnswer, task.Progress)
+			"INSERT INTO tasks (id, title, content, options, correct_answer) VALUES ($1, $2, $3, $4, $5)",
+			task.ID, task.Title, task.Content, pq.Array(task.Options), task.CorrectAnswer)
 		if err != nil {
 			log.Fatalf("failed to insert task: %v", err)
 		} else {
