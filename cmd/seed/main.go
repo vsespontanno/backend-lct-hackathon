@@ -2,12 +2,13 @@ package main
 
 import (
 	"black-pearl/backend-hackathon/internal/config"
-	"black-pearl/backend-hackathon/internal/domain/task/entity"
+	"black-pearl/backend-hackathon/internal/domain/quiz/entity"
 	"black-pearl/backend-hackathon/internal/infrastructure/db"
 	"encoding/json"
-	"github.com/lib/pq"
 	"io/ioutil"
 	"log"
+
+	"github.com/lib/pq"
 )
 
 func main() {
@@ -22,35 +23,35 @@ func main() {
 		log.Printf("failed to connect to database: %v", err)
 		return
 	}
-	data, err := ioutil.ReadFile("seed/tasks.json")
+	data, err := ioutil.ReadFile("seed/quizs.json")
 	if err != nil {
-		log.Fatalf("failed to read seed/tasks.json: %v", err)
+		log.Fatalf("failed to read seed/quizs.json: %v", err)
 		return
 	}
 
-	var tasks []entity.Task
-	err = json.Unmarshal(data, &tasks)
+	var quizs []entity.Quiz
+	err = json.Unmarshal(data, &quizs)
 	if err != nil {
-		log.Fatalf("failed to parse seed/tasks.json: %v", err)
+		log.Fatalf("failed to parse seed/quizs.json: %v", err)
 		return
 	}
 
-	for _, task := range tasks {
+	for _, quiz := range quizs {
 		var exists bool
-		err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM tasks WHERE id=$1)", task.ID).Scan(&exists)
+		err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM quizs WHERE id=$1)", quiz.ID).Scan(&exists)
 		if err != nil {
-			log.Fatalf("failed to query task: %v", err)
+			log.Fatalf("failed to query quiz: %v", err)
 		}
 		if exists {
 			continue
 		}
 		_, err := db.Exec(
-			"INSERT INTO tasks (id, title, content, options, correct_answer) VALUES ($1, $2, $3, $4, $5)",
-			task.ID, task.Title, task.Content, pq.Array(task.Options), task.CorrectAnswer)
+			"INSERT INTO quizs (id, title, content, options, correct_answer) VALUES ($1, $2, $3, $4, $5)",
+			quiz.ID, quiz.Title, quiz.Content, pq.Array(quiz.Options), quiz.CorrectAnswer)
 		if err != nil {
-			log.Fatalf("failed to insert task: %v", err)
+			log.Fatalf("failed to insert quiz: %v", err)
 		} else {
-			log.Printf("inserted task: %v", task.ID)
+			log.Printf("inserted quiz: %v", quiz.ID)
 		}
 	}
 }

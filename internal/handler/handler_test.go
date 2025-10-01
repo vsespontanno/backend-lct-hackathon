@@ -3,7 +3,10 @@ package handler
 import (
 	"black-pearl/backend-hackathon/internal/domain/pet/entity"
 	prizeEntity "black-pearl/backend-hackathon/internal/domain/prize/entity"
-	taskEntity "black-pearl/backend-hackathon/internal/domain/task/entity"
+	quizEntity "black-pearl/backend-hackathon/internal/domain/quiz/entity"
+	sectionItemsEntity "black-pearl/backend-hackathon/internal/domain/sectionItems/entity"
+	sectionEntity "black-pearl/backend-hackathon/internal/domain/sections/entity"
+	theoryEntity "black-pearl/backend-hackathon/internal/domain/theory/entity"
 	"black-pearl/backend-hackathon/internal/handler/dto"
 	"bytes"
 	"context"
@@ -15,9 +18,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 )
 
-// Mock services with correct context types
+// Mock services
 type MockPetService struct {
 	mock.Mock
 }
@@ -60,278 +64,589 @@ func (m *MockPrizeService) MyPrizes(ctx context.Context, user_id int) (*[]prizeE
 	return args.Get(0).(*[]prizeEntity.Prize), args.Error(1)
 }
 
-type MockTaskService struct {
+type MockQuizService struct {
 	mock.Mock
 }
 
-func (m *MockTaskService) Task(ctx context.Context, taskID int) (*taskEntity.Task, error) {
-	args := m.Called(ctx, taskID)
-	return args.Get(0).(*taskEntity.Task), args.Error(1)
+func (m *MockQuizService) GetQuiz(ctx context.Context, quizID int64) (*quizEntity.Quiz, error) {
+	args := m.Called(ctx, quizID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*quizEntity.Quiz), args.Error(1)
+}
+
+type MockSectionService struct {
+	mock.Mock
+}
+
+func (m *MockSectionService) GetSections(ctx context.Context) (*[]sectionEntity.Sections, error) {
+	args := m.Called(ctx)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*[]sectionEntity.Sections), args.Error(1)
+}
+
+func (m *MockSectionService) NewSection(ctx context.Context, title string) (*sectionEntity.Sections, error) {
+	args := m.Called(ctx, title)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*sectionEntity.Sections), args.Error(1)
+}
+
+type MockSectionItemsService struct {
+	mock.Mock
+}
+
+func (m *MockSectionItemsService) GetSectionItemsBySectionID(ctx context.Context, sectionID int64) (*[]sectionItemsEntity.SectionItem, error) {
+	args := m.Called(ctx, sectionID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*[]sectionItemsEntity.SectionItem), args.Error(1)
+}
+
+func (m *MockSectionItemsService) NewSectionItem(ctx context.Context, sectionID int64, title string, isTest bool, itemId int64) (*sectionItemsEntity.SectionItem, error) {
+	args := m.Called(ctx, sectionID, title, isTest, itemId)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*sectionItemsEntity.SectionItem), args.Error(1)
+}
+
+type MockTheoryService struct {
+	mock.Mock
+}
+
+func (m *MockTheoryService) GetTheoryByID(ctx context.Context, theoryID int64) (*theoryEntity.Theory, error) {
+	args := m.Called(ctx, theoryID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*theoryEntity.Theory), args.Error(1)
+}
+
+func (m *MockTheoryService) NewTheory(ctx context.Context, title, content string) (*theoryEntity.Theory, error) {
+	args := m.Called(ctx, title, content)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*theoryEntity.Theory), args.Error(1)
 }
 
 func TestHandler_GetPet(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	tests := []struct {
-		name           string
-		userID         string
-		mockPet        *entity.Pet
-		mockError      error
-		expectedStatus int
-	}{
-		{
-			name:   "successful get pet",
-			userID: "1",
-			mockPet: &entity.Pet{
-				ID:   1,
-				Name: "Buddy",
-				Age:  2,
-				Exp:  100,
-			},
-			expectedStatus: http.StatusOK,
-		},
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	mockPet := &entity.Pet{
+		ID:   1,
+		Name: "Buddy",
+		Age:  2,
+		Exp:  100,
 	}
+	mockPetSvc.On("GetPetByUserID", mock.Anything, 1).Return(mockPet, nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockPetSvc := new(MockPetService)
-			mockPrizeSvc := new(MockPrizeService)
-			mockTaskSvc := new(MockTaskService)
+	router := gin.Default()
+	router.GET("/pet/:id", handler.GetPet)
 
-			handler := NewHandler(mockTaskSvc, mockPetSvc, mockPrizeSvc)
+	req, _ := http.NewRequest("GET", "/pet/1", nil)
+	resp := httptest.NewRecorder()
 
-			mockPetSvc.On("GetPetByUserID", mock.Anything, 1).Return(tt.mockPet, tt.mockError)
+	router.ServeHTTP(resp, req)
 
-			router := gin.Default()
-			router.GET("/pet/:id", handler.GetPet)
+	assert.Equal(t, http.StatusOK, resp.Code)
 
-			req, _ := http.NewRequest("GET", "/pet/"+tt.userID, nil)
-			resp := httptest.NewRecorder()
+	var response dto.GetPetResp
+	err := json.Unmarshal(resp.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, mockPet.ID, response.ID)
+	assert.Equal(t, mockPet.Name, response.Name)
+	assert.Equal(t, mockPet.Age, response.Age)
+	assert.Equal(t, mockPet.Exp, response.Exp)
 
-			router.ServeHTTP(resp, req)
-
-			assert.Equal(t, tt.expectedStatus, resp.Code)
-
-			if tt.expectedStatus == http.StatusOK {
-				var response dto.GetPetResp
-				err := json.Unmarshal(resp.Body.Bytes(), &response)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.mockPet.ID, response.ID)
-				assert.Equal(t, tt.mockPet.Name, response.Name)
-				assert.Equal(t, tt.mockPet.Age, response.Age)
-				assert.Equal(t, tt.mockPet.Exp, response.Exp)
-			}
-
-			mockPetSvc.AssertExpectations(t)
-		})
-	}
+	mockPetSvc.AssertExpectations(t)
 }
 
 func TestHandler_PostName(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	tests := []struct {
-		name           string
-		request        dto.SetPetNameReq
-		mockError      error
-		expectedStatus int
-	}{
-		{
-			name: "successful set pet name",
-			request: dto.SetPetNameReq{
-				Name:   "Max",
-				UserID: 1,
-			},
-			expectedStatus: http.StatusOK,
-		},
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	request := dto.SetPetNameReq{
+		Name:   "Max",
+		UserID: 1,
 	}
+	mockPetSvc.On("SetName", mock.Anything, request.Name, request.UserID).Return(nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockPetSvc := new(MockPetService)
-			mockPrizeSvc := new(MockPrizeService)
-			mockTaskSvc := new(MockTaskService)
+	router := gin.Default()
+	router.POST("/pet/name", handler.PostName)
 
-			handler := NewHandler(mockTaskSvc, mockPetSvc, mockPrizeSvc)
+	requestBody, _ := json.Marshal(request)
+	req, _ := http.NewRequest("POST", "/pet/name", bytes.NewBuffer(requestBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
 
-			mockPetSvc.On("SetName", mock.Anything, tt.request.Name, tt.request.UserID).Return(tt.mockError)
+	router.ServeHTTP(resp, req)
 
-			router := gin.Default()
-			router.POST("/pet/name", handler.PostName)
-
-			requestBody, _ := json.Marshal(tt.request)
-			req, _ := http.NewRequest("POST", "/pet/name", bytes.NewBuffer(requestBody))
-			req.Header.Set("Content-Type", "application/json")
-			resp := httptest.NewRecorder()
-
-			router.ServeHTTP(resp, req)
-
-			assert.Equal(t, tt.expectedStatus, resp.Code)
-			mockPetSvc.AssertExpectations(t)
-		})
-	}
+	assert.Equal(t, http.StatusOK, resp.Code)
+	mockPetSvc.AssertExpectations(t)
 }
 
 func TestHandler_PostXP(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	tests := []struct {
-		name           string
-		request        dto.SendXPReq
-		mockError      error
-		expectedStatus int
-	}{
-		{
-			name: "successful update XP",
-			request: dto.SendXPReq{
-				UserID: 1,
-				Exp:    50,
-			},
-			expectedStatus: http.StatusOK,
-		},
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	request := dto.SendXPReq{
+		UserID: 1,
+		Exp:    50,
 	}
+	mockPetSvc.On("UpdateXP", mock.Anything, request.Exp, request.UserID).Return(nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockPetSvc := new(MockPetService)
-			mockPrizeSvc := new(MockPrizeService)
-			mockTaskSvc := new(MockTaskService)
+	router := gin.Default()
+	router.POST("/pet/xp", handler.PostXP)
 
-			handler := NewHandler(mockTaskSvc, mockPetSvc, mockPrizeSvc)
+	requestBody, _ := json.Marshal(request)
+	req, _ := http.NewRequest("POST", "/pet/xp", bytes.NewBuffer(requestBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
 
-			mockPetSvc.On("UpdateXP", mock.Anything, tt.request.Exp, tt.request.UserID).Return(tt.mockError)
+	router.ServeHTTP(resp, req)
 
-			router := gin.Default()
-			router.POST("/pet/xp", handler.PostXP)
-
-			requestBody, _ := json.Marshal(tt.request)
-			req, _ := http.NewRequest("POST", "/pet/xp", bytes.NewBuffer(requestBody))
-			req.Header.Set("Content-Type", "application/json")
-			resp := httptest.NewRecorder()
-
-			router.ServeHTTP(resp, req)
-
-			assert.Equal(t, tt.expectedStatus, resp.Code)
-			mockPetSvc.AssertExpectations(t)
-		})
-	}
+	assert.Equal(t, http.StatusOK, resp.Code)
+	mockPetSvc.AssertExpectations(t)
 }
 
 func TestHandler_GetMyPrizes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	tests := []struct {
-		name           string
-		userID         string
-		mockPrizes     *[]prizeEntity.Prize
-		mockError      error
-		expectedStatus int
-	}{
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	mockPrizes := &[]prizeEntity.Prize{
 		{
-			name:   "successful get my prizes",
-			userID: "1",
-			mockPrizes: &[]prizeEntity.Prize{
-				{
-					Title:       "Prize 1",
-					Description: "Description 1",
-					ImageURL:    "http://example.com/prize1.jpg",
-				},
-				{
-					Title:       "Prize 2",
-					Description: "Description 2",
-					ImageURL:    "http://example.com/prize2.jpg",
-				},
-			},
-			expectedStatus: http.StatusOK,
+			Title:       "Prize 1",
+			Description: "Description 1",
+			ImageURL:    "http://example.com/prize1.jpg",
+		},
+		{
+			Title:       "Prize 2",
+			Description: "Description 2",
+			ImageURL:    "http://example.com/prize2.jpg",
 		},
 	}
+	mockPrizeSvc.On("MyPrizes", mock.Anything, 1).Return(mockPrizes, nil)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockPetSvc := new(MockPetService)
-			mockPrizeSvc := new(MockPrizeService)
-			mockTaskSvc := new(MockTaskService)
+	router := gin.Default()
+	router.GET("/prizes/:id/my", handler.GetMyPrizes)
 
-			handler := NewHandler(mockTaskSvc, mockPetSvc, mockPrizeSvc)
+	req, _ := http.NewRequest("GET", "/prizes/1/my", nil)
+	resp := httptest.NewRecorder()
 
-			mockPrizeSvc.On("MyPrizes", mock.Anything, 1).Return(tt.mockPrizes, tt.mockError)
+	router.ServeHTTP(resp, req)
 
-			router := gin.Default()
-			router.GET("/prizes/:id/my", handler.GetMyPrizes)
+	assert.Equal(t, http.StatusOK, resp.Code)
 
-			req, _ := http.NewRequest("GET", "/prizes/"+tt.userID+"/my", nil)
-			resp := httptest.NewRecorder()
+	var response dto.GetPrizesResp
+	err := json.Unmarshal(resp.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Len(t, response.Prizes, len(*mockPrizes))
+	assert.Equal(t, (*mockPrizes)[0].Title, response.Prizes[0].Title)
 
-			router.ServeHTTP(resp, req)
-
-			assert.Equal(t, tt.expectedStatus, resp.Code)
-
-			if tt.expectedStatus == http.StatusOK {
-				var response dto.GetPrizesResp
-				err := json.Unmarshal(resp.Body.Bytes(), &response)
-				assert.NoError(t, err)
-				assert.Len(t, response.Prizes, len(*tt.mockPrizes))
-				assert.Equal(t, (*tt.mockPrizes)[0].Title, response.Prizes[0].Title)
-			}
-
-			mockPrizeSvc.AssertExpectations(t)
-		})
-	}
+	mockPrizeSvc.AssertExpectations(t)
 }
 
 func TestHandler_GetAvailablePrizes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	tests := []struct {
-		name           string
-		userID         string
-		mockPrizes     *[]prizeEntity.Prize
-		mockError      error
-		expectedStatus int
-	}{
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	mockPrizes := &[]prizeEntity.Prize{
 		{
-			name:   "successful get available prizes",
-			userID: "1",
-			mockPrizes: &[]prizeEntity.Prize{
-				{
-					Title:       "Available Prize 1",
-					Description: "Available Description 1",
-					ImageURL:    "http://example.com/available1.jpg",
-				},
-			},
-			expectedStatus: http.StatusOK,
+			Title:       "Available Prize 1",
+			Description: "Available Description 1",
+			ImageURL:    "http://example.com/available1.jpg",
+		},
+	}
+	mockPrizeSvc.On("AvailablePrizes", mock.Anything, 1).Return(mockPrizes, nil)
+
+	router := gin.Default()
+	router.POST("/prizes/:id/available", handler.GetAvailablePrizes)
+
+	req, _ := http.NewRequest("POST", "/prizes/1/available", nil)
+	resp := httptest.NewRecorder()
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+
+	var response dto.GetPrizesResp
+	err := json.Unmarshal(resp.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Len(t, response.Prizes, len(*mockPrizes))
+	assert.Equal(t, (*mockPrizes)[0].Title, response.Prizes[0].Title)
+
+	mockPrizeSvc.AssertExpectations(t)
+}
+
+func TestHandler_GetQuiz(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	mockQuiz := &quizEntity.Quiz{
+		ID:    1,
+		Title: "Test Quiz",
+	}
+	mockQuizSvc.On("GetQuiz", mock.Anything, int64(1)).Return(mockQuiz, nil)
+
+	router := gin.Default()
+	router.GET("/quiz/:id", handler.GetQuiz)
+
+	req, _ := http.NewRequest("GET", "/quiz/1", nil)
+	resp := httptest.NewRecorder()
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+
+	var response quizEntity.Quiz
+	err := json.Unmarshal(resp.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, mockQuiz.ID, response.ID)
+	assert.Equal(t, mockQuiz.Title, response.Title)
+
+	mockQuizSvc.AssertExpectations(t)
+}
+
+func TestHandler_GetSectionsWithItems(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	mockSections := &[]sectionEntity.Sections{
+		{
+			ID:    1,
+			Title: "Section 1",
+		},
+		{
+			ID:    2,
+			Title: "Section 2",
+		},
+	}
+	mockItems := &[]sectionItemsEntity.SectionItem{
+		{
+			SectionID: 1,
+			Title:     "Item 1",
+			IsTest:    false,
+			ItemID:    1,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockPetSvc := new(MockPetService)
-			mockPrizeSvc := new(MockPrizeService)
-			mockTaskSvc := new(MockTaskService)
+	mockSectionSvc.On("GetSections", mock.Anything).Return(mockSections, nil)
+	mockSectionItemsSvc.On("GetSectionItemsBySectionID", mock.Anything, int64(1)).Return(mockItems, nil)
+	mockSectionItemsSvc.On("GetSectionItemsBySectionID", mock.Anything, int64(2)).Return(mockItems, nil)
 
-			handler := NewHandler(mockTaskSvc, mockPetSvc, mockPrizeSvc)
+	router := gin.Default()
+	router.GET("/sections", handler.GetSectionsWithItems)
 
-			mockPrizeSvc.On("AvailablePrizes", mock.Anything, 1).Return(tt.mockPrizes, tt.mockError)
+	req, _ := http.NewRequest("GET", "/sections", nil)
+	resp := httptest.NewRecorder()
 
-			router := gin.Default()
-			router.POST("/prizes/:id/available", handler.GetAvailablePrizes)
+	router.ServeHTTP(resp, req)
 
-			req, _ := http.NewRequest("POST", "/prizes/"+tt.userID+"/available", nil)
-			resp := httptest.NewRecorder()
+	assert.Equal(t, http.StatusOK, resp.Code)
 
-			router.ServeHTTP(resp, req)
+	var response []dto.SectionWithItemsResp
+	err := json.Unmarshal(resp.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Len(t, response, 2)
+	assert.Equal(t, (*mockSections)[0].Title, response[0].Title)
+	assert.Len(t, response[0].Items, 1)
 
-			assert.Equal(t, tt.expectedStatus, resp.Code)
+	mockSectionSvc.AssertExpectations(t)
+	mockSectionItemsSvc.AssertExpectations(t)
+}
 
-			if tt.expectedStatus == http.StatusOK {
-				var response dto.GetPrizesResp
-				err := json.Unmarshal(resp.Body.Bytes(), &response)
-				assert.NoError(t, err)
-				assert.Len(t, response.Prizes, len(*tt.mockPrizes))
-				assert.Equal(t, (*tt.mockPrizes)[0].Title, response.Prizes[0].Title)
-			}
+func TestHandler_NewSection(t *testing.T) {
+	gin.SetMode(gin.TestMode)
 
-			mockPrizeSvc.AssertExpectations(t)
-		})
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	request := dto.NewSectionReq{
+		Title: "New Section",
 	}
+	mockSection := &sectionEntity.Sections{
+		ID:    1,
+		Title: request.Title,
+	}
+	mockSectionSvc.On("NewSection", mock.Anything, request.Title).Return(mockSection, nil)
+
+	router := gin.Default()
+	router.POST("/sections", handler.NewSection)
+
+	requestBody, _ := json.Marshal(request)
+	req, _ := http.NewRequest("POST", "/sections", bytes.NewBuffer(requestBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusCreated, resp.Code)
+
+	var response sectionEntity.Sections
+	err := json.Unmarshal(resp.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, mockSection.ID, response.ID)
+	assert.Equal(t, mockSection.Title, response.Title)
+
+	mockSectionSvc.AssertExpectations(t)
+}
+
+func TestHandler_GetSectionItems(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	mockItems := &[]sectionItemsEntity.SectionItem{
+		{
+			SectionID: 1,
+			Title:     "Item 1",
+			IsTest:    false,
+			ItemID:    1,
+		},
+		{
+			SectionID: 1,
+			Title:     "Item 2",
+			IsTest:    true,
+			ItemID:    2,
+		},
+	}
+	mockSectionItemsSvc.On("GetSectionItemsBySectionID", mock.Anything, int64(1)).Return(mockItems, nil)
+
+	router := gin.Default()
+	router.GET("/sections/:id/items", handler.GetSectionItems)
+
+	req, _ := http.NewRequest("GET", "/sections/1/items", nil)
+	resp := httptest.NewRecorder()
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+
+	var response []sectionItemsEntity.SectionItem
+	err := json.Unmarshal(resp.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Len(t, response, 2)
+	assert.Equal(t, (*mockItems)[0].Title, response[0].Title)
+
+	mockSectionItemsSvc.AssertExpectations(t)
+}
+
+func TestHandler_NewSectionItem(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	request := dto.NewSectionItemReq{
+		Title:  "New Item",
+		IsTest: true,
+		ItemID: 5,
+	}
+	mockItem := &sectionItemsEntity.SectionItem{
+		SectionID: 1,
+		Title:     request.Title,
+		IsTest:    request.IsTest,
+		ItemID:    request.ItemID,
+	}
+	mockSectionItemsSvc.On("NewSectionItem", mock.Anything, int64(1), request.Title, request.IsTest, request.ItemID).Return(mockItem, nil)
+
+	router := gin.Default()
+	router.POST("/sections/:id/items", handler.NewSectionItem)
+
+	requestBody, _ := json.Marshal(request)
+	req, _ := http.NewRequest("POST", "/sections/1/items", bytes.NewBuffer(requestBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusCreated, resp.Code)
+
+	var response sectionItemsEntity.SectionItem
+	err := json.Unmarshal(resp.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, mockItem.Title, response.Title)
+	assert.Equal(t, mockItem.IsTest, response.IsTest)
+	assert.Equal(t, mockItem.ItemID, response.ItemID)
+
+	mockSectionItemsSvc.AssertExpectations(t)
+}
+
+func TestHandler_GetTheory(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	mockTheory := &theoryEntity.Theory{
+		ID:      1,
+		Title:   "Test Theory",
+		Content: "Theory content",
+	}
+	mockTheorySvc.On("GetTheoryByID", mock.Anything, int64(1)).Return(mockTheory, nil)
+
+	router := gin.Default()
+	router.GET("/theory/:id", handler.GetTheory)
+
+	req, _ := http.NewRequest("GET", "/theory/1", nil)
+	resp := httptest.NewRecorder()
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+
+	var response theoryEntity.Theory
+	err := json.Unmarshal(resp.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, mockTheory.ID, response.ID)
+	assert.Equal(t, mockTheory.Title, response.Title)
+	assert.Equal(t, mockTheory.Content, response.Content)
+
+	mockTheorySvc.AssertExpectations(t)
+}
+
+func TestHandler_NewTheory(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	mockPetSvc := new(MockPetService)
+	mockPrizeSvc := new(MockPrizeService)
+	mockQuizSvc := new(MockQuizService)
+	mockSectionSvc := new(MockSectionService)
+	mockSectionItemsSvc := new(MockSectionItemsService)
+	mockTheorySvc := new(MockTheoryService)
+	logger := zap.NewNop().Sugar()
+
+	handler := NewHandler(mockQuizSvc, mockPetSvc, mockSectionSvc, mockSectionItemsSvc, mockTheorySvc, mockPrizeSvc, logger)
+
+	request := dto.NewTheoryReq{
+		Title:   "New Theory",
+		Content: "Theory content",
+	}
+	mockTheory := &theoryEntity.Theory{
+		ID:      1,
+		Title:   request.Title,
+		Content: request.Content,
+	}
+	mockTheorySvc.On("NewTheory", mock.Anything, request.Title, request.Content).Return(mockTheory, nil)
+
+	router := gin.Default()
+	router.POST("/theory", handler.NewTheory)
+
+	requestBody, _ := json.Marshal(request)
+	req, _ := http.NewRequest("POST", "/theory", bytes.NewBuffer(requestBody))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+
+	router.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusCreated, resp.Code)
+
+	var response theoryEntity.Theory
+	err := json.Unmarshal(resp.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, mockTheory.ID, response.ID)
+	assert.Equal(t, mockTheory.Title, response.Title)
+	assert.Equal(t, mockTheory.Content, response.Content)
+
+	mockTheorySvc.AssertExpectations(t)
 }

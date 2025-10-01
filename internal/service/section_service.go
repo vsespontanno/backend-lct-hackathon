@@ -8,21 +8,21 @@ import (
 
 	"black-pearl/backend-hackathon/internal/domain/sections/entity"
 	"black-pearl/backend-hackathon/internal/domain/sections/interfaces"
-	handlerInterfaces "black-pearl/backend-hackathon/internal/handler"
-)
 
-var _ handlerInterfaces.SectionServiceInterface = (*SectionService)(nil)
+	"go.uber.org/zap"
+)
 
 var (
 	ErrInvalidTitle = errors.New("invalid title of section")
 )
 
 type SectionService struct {
-	repo interfaces.SectionsRepoInterface
+	repo   interfaces.SectionsRepoInterface
+	logger *zap.SugaredLogger
 }
 
-func NewSectionService(repo interfaces.SectionsRepoInterface) *SectionService {
-	return &SectionService{repo: repo}
+func NewSectionService(repo interfaces.SectionsRepoInterface, logger *zap.SugaredLogger) *SectionService {
+	return &SectionService{repo: repo, logger: logger}
 }
 
 // Получить все секции
@@ -32,6 +32,7 @@ func (s *SectionService) GetSections(ctx context.Context) (*[]entity.Sections, e
 		if err == sql.ErrNoRows {
 			return &[]entity.Sections{}, nil
 		}
+		s.logger.Errorw("failed to get sections", "error", err, "stage", "GetSections.GetSections")
 		return nil, fmt.Errorf("failed to get sections: %w", err)
 	}
 	return sections, nil
@@ -40,6 +41,7 @@ func (s *SectionService) GetSections(ctx context.Context) (*[]entity.Sections, e
 // Создать новую секцию
 func (s *SectionService) NewSection(ctx context.Context, title string) (*entity.Sections, error) {
 	if title == "" {
+		s.logger.Errorw("failed to create section", "error", ErrInvalidTitle, "stage", "NewSection.NewSection")
 		return nil, ErrInvalidTitle
 	}
 
@@ -48,7 +50,8 @@ func (s *SectionService) NewSection(ctx context.Context, title string) (*entity.
 	}
 
 	if err := s.repo.CreateSection(ctx, section); err != nil {
-		return nil, fmt.Errorf("failed to create section: %w", err)
+		s.logger.Errorw("failed to create section", "error", err, "stage", "NewSection.CreateSection")
+		return nil, err
 	}
 
 	return section, nil

@@ -6,9 +6,9 @@ import (
 	"black-pearl/backend-hackathon/internal/infrastructure/db"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/pet"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/prize"
+	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/quiz"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/sectionItems"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/sections"
-	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/task"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/theory"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/user"
 	"black-pearl/backend-hackathon/internal/service"
@@ -37,7 +37,7 @@ func NewApp() *App {
 	logger.Log.Infow("connected to database", "stage", "connectToPostgres")
 	r := gin.Default()
 	logger.Log.Infow("initialized gin-router", "stage", "gin.Default")
-	taskRepo := task.NewTaskRepo(dataBase)
+	quizRepo := quiz.NewQuizRepo(dataBase)
 	petRepo := pet.NewPetRepo(dataBase)
 	userRepo := user.NewUserRepo(dataBase)
 	prizeRepo := prize.NewPrizeRepo(dataBase)
@@ -48,17 +48,18 @@ func NewApp() *App {
 	sectionRepo := sections.NewSectionsRepo(dataBase)
 	sectionItemsRepo := sectionitems.NewSectionItemsRepo(dataBase)
 	theoryRepo := theory.NewTheoryRepo(dataBase)
-	taskSvc := service.NewTaskService(taskRepo)
-	sectionSvc := service.NewSectionService(sectionRepo)
+	quizSvc := service.NewQuizService(quizRepo, logger.Log)
+	sectionSvc := service.NewSectionService(sectionRepo, logger.Log)
 	if sectionSvc == nil {
-		log.Fatal("failed to initialize sectionSvc")
+		logger.Log.Errorw("sectionSvc is nil", "stage", "NewSectionService")
+		return nil
 	}
-	sectionItemsSvc := service.NewSectionItemsService(sectionItemsRepo)
-	theorySvc := service.NewTheoryService(theoryRepo)
-	taskHandler := handler.NewHandler(taskSvc, petSvc, sectionSvc, sectionItemsSvc, theorySvc, prizeSvc)
+	sectionItemsSvc := service.NewSectionItemsService(sectionItemsRepo, logger.Log)
+	theorySvc := service.NewTheoryService(theoryRepo, logger.Log)
+	quizHandler := handler.NewHandler(quizSvc, petSvc, sectionSvc, sectionItemsSvc, theorySvc, prizeSvc, logger.Log)
 
 	logger.Log.Infow("initialized handlers", "stage", "handlers")
-	taskHandler.Register(r)
+	quizHandler.Register(r)
 	return &App{
 		engine: r,
 	}

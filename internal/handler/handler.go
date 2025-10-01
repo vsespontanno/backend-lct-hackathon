@@ -2,18 +2,18 @@ package handler
 
 import (
 	petEntity "black-pearl/backend-hackathon/internal/domain/pet/entity"
+	prizeEntity "black-pearl/backend-hackathon/internal/domain/prize/entity"
+	quizEntity "black-pearl/backend-hackathon/internal/domain/quiz/entity"
 	sectionItemsEntity "black-pearl/backend-hackathon/internal/domain/sectionItems/entity"
 	sectionEntity "black-pearl/backend-hackathon/internal/domain/sections/entity"
-	prizeEntity "black-pearl/backend-hackathon/internal/domain/prize/entity"
-	taskEntity "black-pearl/backend-hackathon/internal/domain/task/entity"
 	theoryEntity "black-pearl/backend-hackathon/internal/domain/theory/entity"
 	"black-pearl/backend-hackathon/internal/handler/dto"
 	"context"
-	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type PrizeServiceInterface interface {
@@ -21,8 +21,8 @@ type PrizeServiceInterface interface {
 	MyPrizes(ctx context.Context, user_id int) (*[]prizeEntity.Prize, error)
 }
 
-type TaskServiceInterface interface {
-	GetTask(ctx context.Context, taskID int64) (*taskEntity.Task, error)
+type QuizServiceInterface interface {
+	GetQuiz(ctx context.Context, quizID int64) (*quizEntity.Quiz, error)
 }
 
 type PetServiceInterface interface {
@@ -47,34 +47,37 @@ type TheoryServiceInterface interface {
 }
 
 type Handler struct {
-	taskSvc         TaskServiceInterface
+	quizSvc         QuizServiceInterface
 	petSvc          PetServiceInterface
 	sectionSvc      SectionServiceInterface
 	sectionItemsSvc SectionItemsServiceInterface
 	theorySvc       TheoryServiceInterface
-	prizeSvc PrizeServiceInterface
+	prizeSvc        PrizeServiceInterface
+	logger          *zap.SugaredLogger
 }
 
 func NewHandler(
-	taskSvc TaskServiceInterface,
+	quizSvc QuizServiceInterface,
 	petSvc PetServiceInterface,
 	sectionSvc SectionServiceInterface,
 	sectionItemsSvc SectionItemsServiceInterface,
 	theorySvc TheoryServiceInterface,
 	prizeSvc PrizeServiceInterface,
+	logger *zap.SugaredLogger,
 ) *Handler {
 	return &Handler{
-		taskSvc:         taskSvc,
+		quizSvc:         quizSvc,
 		petSvc:          petSvc,
 		sectionSvc:      sectionSvc,
 		sectionItemsSvc: sectionItemsSvc,
 		theorySvc:       theorySvc,
-		prizeSvc: prizeSvc,
+		prizeSvc:        prizeSvc,
+		logger:          logger,
 	}
 }
 
 func (h *Handler) Register(r *gin.Engine) {
-	r.GET("/task/:id", h.GetTask)
+	r.GET("/quiz/:id", h.GetQuiz)
 
 	// новые ручки
 	r.GET("/sections", h.GetSectionsWithItems)
@@ -84,7 +87,7 @@ func (h *Handler) Register(r *gin.Engine) {
 
 	r.GET("/theory/:id", h.GetTheory)
 	r.POST("/theory", h.NewTheory)
-	
+
 	r.GET("/prizes/{id}/my", h.GetMyPrizes)
 	r.POST("/prizes/{id}/available", h.GetAvailablePrizes)
 	r.POST("/pet/xp", h.PostXP)
@@ -96,17 +99,20 @@ func (h *Handler) GetPet(c *gin.Context) {
 	userIDStr := c.Param("id")
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
+		h.logger.Errorw("Invalid user ID", "error", err, "stage", "GetPet.Atoi")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
 	pet, err := h.petSvc.GetPetByUserID(c.Request.Context(), userID)
 	if err != nil {
+		h.logger.Errorw("failed to get pet", "error", err, "stage", "GetPet.GetPetByUserID")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	if pet == nil {
+		h.logger.Errorw("pet not found", "stage", "GetPet.GetPetByUserID")
 		c.JSON(http.StatusNotFound, gin.H{"error": "pet not found"})
 		return
 	}
@@ -124,12 +130,14 @@ func (h *Handler) GetPet(c *gin.Context) {
 func (h *Handler) PostName(c *gin.Context) {
 	var req dto.SetPetNameReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Errorw("failed to bind request", "error", err, "stage", "PostName.ShouldBindJSON")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	err := h.petSvc.SetName(context.Background(), req.Name, req.UserID)
 	if err != nil {
+		h.logger.Errorw("failed to set pet name", "error", err, "stage", "PostName.SetName")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -143,6 +151,7 @@ func (h *Handler) GetSectionsWithItems(c *gin.Context) {
 
 	sections, err := h.sectionSvc.GetSections(ctx)
 	if err != nil || sections == nil {
+		h.logger.Errorw("failed to get sections", "error", err, "stage", "GetSectionsWithItems.GetSections")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -150,7 +159,10 @@ func (h *Handler) GetSectionsWithItems(c *gin.Context) {
 	var result []dto.SectionWithItemsResp
 	for _, section := range *sections {
 		items, err := h.sectionItemsSvc.GetSectionItemsBySectionID(ctx, section.ID)
-		if err != nil || items == nil {
+		if err != nil {
+			h.logger.Errorw("failed to get section items", "error", err, "stage", "GetSectionsWithItems.GetSectionItemsBySectionID")
+		}
+		if items == nil {
 			items = &[]sectionItemsEntity.SectionItem{}
 		}
 
@@ -167,11 +179,13 @@ func (h *Handler) GetSectionsWithItems(c *gin.Context) {
 func (h *Handler) NewSection(c *gin.Context) {
 	var req dto.NewSectionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Errorw("failed to bind request", "error", err, "stage", "NewSection.ShouldBindJSON")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	section, err := h.sectionSvc.NewSection(c.Request.Context(), req.Title)
 	if err != nil {
+		h.logger.Errorw("failed to create section", "error", err, "stage", "NewSection.NewSection")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -184,11 +198,13 @@ func (h *Handler) GetSectionItems(c *gin.Context) {
 	sectionIDStr := c.Param("id")
 	sectionID, err := strconv.ParseInt(sectionIDStr, 10, 64)
 	if err != nil {
+		h.logger.Errorw("invalid section ID", "error", err, "stage", "GetSectionItems.ParseInt")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid section ID"})
 		return
 	}
 	items, err := h.sectionItemsSvc.GetSectionItemsBySectionID(c.Request.Context(), sectionID)
 	if err != nil {
+		h.logger.Errorw("failed to get section items", "error", err, "stage", "GetSectionItems.GetSectionItemsBySectionID")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -199,18 +215,21 @@ func (h *Handler) NewSectionItem(c *gin.Context) {
 	sectionIDStr := c.Param("id")
 	sectionID, err := strconv.ParseInt(sectionIDStr, 10, 64)
 	if err != nil {
+		h.logger.Errorw("invalid section ID", "error", err, "stage", "NewSectionItem.ParseInt")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid section ID"})
 		return
 	}
 
 	var req dto.NewSectionItemReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Errorw("failed to bind request", "error", err, "stage", "NewSectionItem.ShouldBindJSON")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	item, err := h.sectionItemsSvc.NewSectionItem(c.Request.Context(), sectionID, req.Title, req.IsTest, req.ItemID)
 	if err != nil {
+		h.logger.Errorw("failed to create section item", "error", err, "stage", "NewSectionItem.NewSectionItem")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -223,15 +242,18 @@ func (h *Handler) GetTheory(c *gin.Context) {
 	idStr := c.Param("id")
 	theoryID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
+		h.logger.Errorw("invalid theory ID", "error", err, "stage", "GetTheory.ParseInt")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid theory ID"})
 		return
 	}
 	theory, err := h.theorySvc.GetTheoryByID(c.Request.Context(), theoryID)
 	if err != nil {
+		h.logger.Errorw("failed to get theory", "error", err, "stage", "GetTheory.GetTheoryByID")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	if theory == nil {
+		h.logger.Errorw("theory not found", "error", err, "stage", "GetTheory.GetTheoryByID")
 		c.JSON(http.StatusNotFound, gin.H{"error": "theory not found"})
 		return
 	}
@@ -241,11 +263,13 @@ func (h *Handler) GetTheory(c *gin.Context) {
 func (h *Handler) NewTheory(c *gin.Context) {
 	var req dto.NewTheoryReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Errorw("failed to bind request", "error", err, "stage", "NewTheory.ShouldBindJSON")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	theory, err := h.theorySvc.NewTheory(c.Request.Context(), req.Title, req.Content)
 	if err != nil {
+		h.logger.Errorw("failed to create theory", "error", err, "stage", "NewTheory.NewTheory")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -257,11 +281,13 @@ func (h *Handler) NewTheory(c *gin.Context) {
 func (h *Handler) PostXP(c *gin.Context) {
 	var req dto.SendXPReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Errorw("failed to bind request", "error", err, "stage", "PostXP.ShouldBindJSON")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	err := h.petSvc.UpdateXP(context.Background(), req.Exp, req.UserID)
 	if err != nil {
+		h.logger.Errorw("failed to update XP", "error", err, "stage", "PostXP.UpdateXP")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -272,12 +298,14 @@ func (h *Handler) GetMyPrizes(c *gin.Context) {
 	userIDStr := c.Param("id")
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
+		h.logger.Errorw("invalid user ID", "error", err, "stage", "GetMyPrizes.Atoi")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	prizes, err := h.prizeSvc.MyPrizes(context.Background(), userID)
 	if err != nil {
+		h.logger.Errorw("failed to get my prizes", "error", err, "stage", "GetMyPrizes.MyPrizes")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -291,12 +319,14 @@ func (h *Handler) GetAvailablePrizes(c *gin.Context) {
 	userIDStr := c.Param("id")
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
+		h.logger.Errorw("invalid user ID", "error", err, "stage", "GetAvailablePrizes.Atoi")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	prizes, err := h.prizeSvc.AvailablePrizes(context.Background(), userID)
 	if err != nil {
+		h.logger.Errorw("failed to get available prizes", "error", err, "stage", "GetAvailablePrizes.AvailablePrizes")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -306,26 +336,27 @@ func (h *Handler) GetAvailablePrizes(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-
-func (h *Handler) GetTask(c *gin.Context) {
-	taskIDStr := c.Param("id")
-	taskID, err := strconv.ParseInt(taskIDStr, 10, 64)
-	log.Println("taskIDStr =", taskIDStr) // правильный вариант
+func (h *Handler) GetQuiz(c *gin.Context) {
+	quizIDStr := c.Param("id")
+	quizID, err := strconv.ParseInt(quizIDStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID"})
+		h.logger.Errorw("invalid quiz ID", "error", err, "stage", "GetQuiz.ParseInt")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid quiz ID"})
 		return
 	}
 
-	task, err := h.taskSvc.GetTask(c.Request.Context(), taskID)
+	quiz, err := h.quizSvc.GetQuiz(c.Request.Context(), quizID)
 	if err != nil {
+		h.logger.Errorw("failed to get quiz", "error", err, "stage", "GetQuiz.GetQuizByID")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	if task == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+	if quiz == nil {
+		h.logger.Errorw("quiz not found", "error", err, "stage", "GetQuiz.GetQuizByID")
+		c.JSON(http.StatusNotFound, gin.H{"error": "quiz not found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, task)
+	c.JSON(http.StatusOK, quiz)
 }
