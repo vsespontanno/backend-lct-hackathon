@@ -34,7 +34,7 @@ func (r *PetRepo) GetPetByUserID(ctx context.Context, userID int) (*entity.Pet, 
 
 	var pet entity.Pet
 	row := r.db.QueryRowContext(ctx, sqlStr, args...)
-	if err := row.Scan(&pet.ID, &pet.Name, &pet.Age, &pet.Exp, &pet.Level); err != nil {
+	if err := row.Scan(&pet.ID, &pet.Name, &pet.Age, &pet.Exp); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("pet not found")
 		}
@@ -67,6 +67,24 @@ func (r *PetRepo) CreatePet(ctx context.Context, userID int) error {
 		Insert("pets").
 		Columns("user_id", "petName", "age", "exp", "lvl").
 		Values(userID, "", 0, 0, 1)
+
+	sqlStr, args, err := builder.ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.ExecContext(ctx, sqlStr, args...)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *PetRepo) UpdateXP(ctx context.Context, xp int, userID int) error {
+	builder := r.builder.
+		Update("pets").
+		Set("exp", sq.Expr("exp + ?", xp)).
+		Where(sq.Eq{"user_id": userID})
 
 	sqlStr, args, err := builder.ToSql()
 	if err != nil {

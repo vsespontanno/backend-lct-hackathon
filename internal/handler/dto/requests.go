@@ -25,3 +25,8 @@ type NewTheoryReq struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }
+
+type SendXPReq struct {
+	UserID int `json:"userID"`
+	Exp    int `json:"exp"`
+}
