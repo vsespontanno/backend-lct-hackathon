@@ -22,7 +22,7 @@ func NewTaskRepo(db *sql.DB) *TaskRepo {
 	}
 }
 
-func (r *TaskRepo) GetTaskByID(ctx context.Context, taskID int64) (*entity.Task, error) {
+func (r *TaskRepo) GetTaskByID(ctx context.Context, taskID int) (*entity.Task, error) {
 	builder := sq.Select("id", "title", "content", "options", "correct_answer").
 		From("tasks").
 		Where(sq.Eq{"id": taskID})
