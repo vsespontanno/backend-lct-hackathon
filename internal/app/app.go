@@ -6,7 +6,10 @@ import (
 	"black-pearl/backend-hackathon/internal/infrastructure/db"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/pet"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/prize"
+	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/sectionItems"
+	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/sections"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/task"
+	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/theory"
 	"black-pearl/backend-hackathon/internal/infrastructure/repository/postgres/user"
 	"black-pearl/backend-hackathon/internal/service"
 	"black-pearl/backend-hackathon/logger"
@@ -40,10 +43,20 @@ func NewApp() *App {
 	prizeRepo := prize.NewPrizeRepo(dataBase)
 	logger.Log.Infow("initialized repositories", "stage", "repositories")
 	prizeSvc := service.NewPrizeService(prizeRepo, logger.Log)
-	taskSvc := service.NewTaskService(taskRepo, logger.Log)
 	petSvc := service.NewPetService(petRepo, userRepo, logger.Log)
 	logger.Log.Infow("initialized services", "stage", "services")
-	taskHandler := handler.NewHandler(taskSvc, petSvc, prizeSvc)
+	sectionRepo := sections.NewSectionsRepo(dataBase)
+	sectionItemsRepo := sectionitems.NewSectionItemsRepo(dataBase)
+	theoryRepo := theory.NewTheoryRepo(dataBase)
+	taskSvc := service.NewTaskService(taskRepo)
+	sectionSvc := service.NewSectionService(sectionRepo)
+	if sectionSvc == nil {
+		log.Fatal("failed to initialize sectionSvc")
+	}
+	sectionItemsSvc := service.NewSectionItemsService(sectionItemsRepo)
+	theorySvc := service.NewTheoryService(theoryRepo)
+	taskHandler := handler.NewHandler(taskSvc, petSvc, sectionSvc, sectionItemsSvc, theorySvc, prizeSvc)
+
 	logger.Log.Infow("initialized handlers", "stage", "handlers")
 	taskHandler.Register(r)
 	return &App{

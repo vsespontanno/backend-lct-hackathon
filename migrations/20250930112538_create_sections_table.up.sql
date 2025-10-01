@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS sections(
+    id BIGSERIAL PRIMARY KEY ,
+    title TEXT NOT NULL
+);

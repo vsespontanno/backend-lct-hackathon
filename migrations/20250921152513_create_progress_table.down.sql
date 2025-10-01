@@ -1,1 +1,1 @@
-DROP TABLE progress;
+DROP TABLE IF EXISTS progress;

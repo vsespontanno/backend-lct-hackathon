@@ -1,1 +1,1 @@
-DROP TABLE pets;
+DROP TABLE IF EXISTS pets;

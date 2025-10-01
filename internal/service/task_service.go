@@ -4,20 +4,21 @@ import (
 	"black-pearl/backend-hackathon/internal/domain/task/entity"
 	"black-pearl/backend-hackathon/internal/domain/task/interfaces"
 	"context"
-
-	"go.uber.org/zap"
 )
 
 type TaskService struct {
-	repo   interfaces.TaskRepoInterface
-	logger *zap.SugaredLogger
+	repo interfaces.TaskRepoInterface
 }
 
-func NewTaskService(repo interfaces.TaskRepoInterface, logger *zap.SugaredLogger) *TaskService {
-	return &TaskService{repo: repo, logger: logger}
+func NewTaskService(repo interfaces.TaskRepoInterface) *TaskService {
+	return &TaskService{repo: repo}
 }
 
 // Временные затычки
-func (s *TaskService) Task(ctx context.Context, taskID int) (*entity.Task, error) {
-	return nil, nil
+func (s *TaskService) GetTask(ctx context.Context, taskID int64) (*entity.Task, error) {
+	task, err := s.repo.GetTaskByID(ctx, taskID)
+	if err != nil {
+		return nil, err
+	}
+	return task, err
 }
