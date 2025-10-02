@@ -18,7 +18,7 @@ func NewSectionItemsService(repo interfaces.SectionItemsRepoInterface, logger *z
 }
 
 // Получить все айтемы секции
-func (s *SectionItemsService) GetSectionItemsBySectionID(ctx context.Context, sectionID int64) (*[]entity.SectionItem, error) {
+func (s *SectionItemsService) GetSectionItemsBySectionID(ctx context.Context, sectionID int) (*[]entity.SectionItem, error) {
 	items, err := s.repo.GetSectionItemsBySectionId(ctx, sectionID)
 	if err != nil {
 		s.logger.Errorw("failed to get section items", "error", err, "stage", "GetSectionItemsBySectionID.GetSectionItemsBySectionId")
@@ -28,7 +28,7 @@ func (s *SectionItemsService) GetSectionItemsBySectionID(ctx context.Context, se
 }
 
 // Создать новый айтем в секции
-func (s *SectionItemsService) NewSectionItem(ctx context.Context, sectionID int64, title string, isTest bool, itemID int64) (*entity.SectionItem, error) {
+func (s *SectionItemsService) NewSectionItem(ctx context.Context, sectionID int, title string, isTest bool, itemID int) (*entity.SectionItem, error) {
 	sectionItem := &entity.SectionItem{
 		SectionID: sectionID,
 		Title:     title,

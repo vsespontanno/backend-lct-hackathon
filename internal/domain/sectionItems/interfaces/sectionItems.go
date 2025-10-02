@@ -6,6 +6,6 @@ import (
 )
 
 type SectionItemsRepoInterface interface {
-	GetSectionItemsBySectionId(ctx context.Context, sectionId int64) (*[]entity.SectionItem, error)
+	GetSectionItemsBySectionId(ctx context.Context, sectionId int) (*[]entity.SectionItem, error)
 	CreateSectionItem(ctx context.Context, item *entity.SectionItem) error
 }

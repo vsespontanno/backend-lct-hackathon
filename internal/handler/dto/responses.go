@@ -17,13 +17,13 @@ type GetPrizesResp struct {
 }
 
 type SectionWithItemsResp struct {
-	ID    int64                            `json:"id"`
+	ID    int                              `json:"id"`
 	Title string                           `json:"title"`
 	Items []sectionItemsEntity.SectionItem `json:"items"`
 }
 
 type QuizResp struct {
-	ID            int64    `json:"id"`
+	ID            int      `json:"id"`
 	Title         string   `json:"title"`
 	Content       string   `json:"content"`
 	Options       []string `json:"options"`
@@ -31,7 +31,7 @@ type QuizResp struct {
 }
 
 type TheoryResp struct {
-	ID      int64  `json:"id"`
+	ID      int    `json:"id"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }

@@ -18,7 +18,7 @@ func NewTheoryService(repo interfaces.TheoryRepoInterface, logger *zap.SugaredLo
 }
 
 // Получить теорию по ID
-func (s *TheoryService) GetTheoryByID(ctx context.Context, id int64) (*entity.Theory, error) {
+func (s *TheoryService) GetTheoryByID(ctx context.Context, id int) (*entity.Theory, error) {
 	theory, err := s.repo.GetTheoryByID(ctx, id)
 	if err != nil {
 		s.logger.Errorw("failed to get theory", "error", err, "stage", "GetTheoryByID.GetTheoryByID")

@@ -68,7 +68,7 @@ package handler
 // 	mock.Mock
 // }
 
-// func (m *MockQuizService) GetQuiz(ctx context.Context, quizID int64) (*quizEntity.Quiz, error) {
+// func (m *MockQuizService) GetQuiz(ctx context.Context, quizID int) (*quizEntity.Quiz, error) {
 // 	args := m.Called(ctx, quizID)
 // 	if args.Get(0) == nil {
 // 		return nil, args.Error(1)
@@ -100,7 +100,7 @@ package handler
 // 	mock.Mock
 // }
 
-// func (m *MockSectionItemsService) GetSectionItemsBySectionID(ctx context.Context, sectionID int64) (*[]sectionItemsEntity.SectionItem, error) {
+// func (m *MockSectionItemsService) GetSectionItemsBySectionID(ctx context.Context, sectionID int) (*[]sectionItemsEntity.SectionItem, error) {
 // 	args := m.Called(ctx, sectionID)
 // 	if args.Get(0) == nil {
 // 		return nil, args.Error(1)
@@ -108,7 +108,7 @@ package handler
 // 	return args.Get(0).(*[]sectionItemsEntity.SectionItem), args.Error(1)
 // }
 
-// func (m *MockSectionItemsService) NewSectionItem(ctx context.Context, sectionID int64, title string, isTest bool, itemId int64) (*sectionItemsEntity.SectionItem, error) {
+// func (m *MockSectionItemsService) NewSectionItem(ctx context.Context, sectionID int, title string, isTest bool, itemId int) (*sectionItemsEntity.SectionItem, error) {
 // 	args := m.Called(ctx, sectionID, title, isTest, itemId)
 // 	if args.Get(0) == nil {
 // 		return nil, args.Error(1)
@@ -120,7 +120,7 @@ package handler
 // 	mock.Mock
 // }
 
-// func (m *MockTheoryService) GetTheoryByID(ctx context.Context, theoryID int64) (*theoryEntity.Theory, error) {
+// func (m *MockTheoryService) GetTheoryByID(ctx context.Context, theoryID int) (*theoryEntity.Theory, error) {
 // 	args := m.Called(ctx, theoryID)
 // 	if args.Get(0) == nil {
 // 		return nil, args.Error(1)
@@ -348,7 +348,7 @@ package handler
 // 		ID:    1,
 // 		Title: "Test Quiz",
 // 	}
-// 	mockQuizSvc.On("GetQuiz", mock.Anything, int64(1)).Return(mockQuiz, nil)
+// 	mockQuizSvc.On("GetQuiz", mock.Anything, int(1)).Return(mockQuiz, nil)
 
 // 	router := gin.Default()
 // 	router.GET("/quiz/:id", handler.GetQuiz)
@@ -402,8 +402,8 @@ package handler
 // 	}
 
 // 	mockSectionSvc.On("GetSections", mock.Anything).Return(mockSections, nil)
-// 	mockSectionItemsSvc.On("GetSectionItemsBySectionID", mock.Anything, int64(1)).Return(mockItems, nil)
-// 	mockSectionItemsSvc.On("GetSectionItemsBySectionID", mock.Anything, int64(2)).Return(mockItems, nil)
+// 	mockSectionItemsSvc.On("GetSectionItemsBySectionID", mock.Anything, int(1)).Return(mockItems, nil)
+// 	mockSectionItemsSvc.On("GetSectionItemsBySectionID", mock.Anything, int(2)).Return(mockItems, nil)
 
 // 	router := gin.Default()
 // 	router.GET("/sections", handler.GetSectionsWithItems)
@@ -496,7 +496,7 @@ package handler
 // 			ItemID:    2,
 // 		},
 // 	}
-// 	mockSectionItemsSvc.On("GetSectionItemsBySectionID", mock.Anything, int64(1)).Return(mockItems, nil)
+// 	mockSectionItemsSvc.On("GetSectionItemsBySectionID", mock.Anything, int(1)).Return(mockItems, nil)
 
 // 	router := gin.Default()
 // 	router.GET("/sections/:id/items", handler.GetSectionItems)
@@ -541,7 +541,7 @@ package handler
 // 		IsTest:    request.IsTest,
 // 		ItemID:    request.ItemID,
 // 	}
-// 	mockSectionItemsSvc.On("NewSectionItem", mock.Anything, int64(1), request.Title, request.IsTest, request.ItemID).Return(mockItem, nil)
+// 	mockSectionItemsSvc.On("NewSectionItem", mock.Anything, int(1), request.Title, request.IsTest, request.ItemID).Return(mockItem, nil)
 
 // 	router := gin.Default()
 // 	router.POST("/sections/:id/items", handler.NewSectionItem)
@@ -583,7 +583,7 @@ package handler
 // 		Title:   "Test Theory",
 // 		Content: "Theory content",
 // 	}
-// 	mockTheorySvc.On("GetTheoryByID", mock.Anything, int64(1)).Return(mockTheory, nil)
+// 	mockTheorySvc.On("GetTheoryByID", mock.Anything, int(1)).Return(mockTheory, nil)
 
 // 	router := gin.Default()
 // 	router.GET("/theory/:id", handler.GetTheory)

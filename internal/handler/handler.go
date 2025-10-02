@@ -39,12 +39,12 @@ type SectionServiceInterface interface {
 }
 
 type SectionItemsServiceInterface interface {
-	GetSectionItemsBySectionID(ctx context.Context, sectionID int64) (*[]sectionItemsEntity.SectionItem, error)
-	NewSectionItem(ctx context.Context, sectionID int64, title string, isTest bool, itemId int64) (*sectionItemsEntity.SectionItem, error)
+	GetSectionItemsBySectionID(ctx context.Context, sectionID int) (*[]sectionItemsEntity.SectionItem, error)
+	NewSectionItem(ctx context.Context, sectionID int, title string, isTest bool, itemId int) (*sectionItemsEntity.SectionItem, error)
 }
 
 type TheoryServiceInterface interface {
-	GetTheoryByID(ctx context.Context, theoryID int64) (*theoryEntity.Theory, error)
+	GetTheoryByID(ctx context.Context, theoryID int) (*theoryEntity.Theory, error)
 	NewTheory(ctx context.Context, title, content string) (*theoryEntity.Theory, error)
 }
 
@@ -207,7 +207,7 @@ func (h *Handler) NewSection(c *gin.Context) {
 
 func (h *Handler) GetSectionItems(c *gin.Context) {
 	sectionIDStr := c.Param("id")
-	sectionID, err := strconv.ParseInt(sectionIDStr, 10, 64)
+	sectionID, err := strconv.Atoi(sectionIDStr)
 	if err != nil {
 		h.logger.Errorw("invalid section ID", "error", err, "stage", "GetSectionItems.ParseInt")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid section ID"})
@@ -224,7 +224,7 @@ func (h *Handler) GetSectionItems(c *gin.Context) {
 
 func (h *Handler) NewSectionItem(c *gin.Context) {
 	sectionIDStr := c.Param("id")
-	sectionID, err := strconv.ParseInt(sectionIDStr, 10, 64)
+	sectionID, err := strconv.Atoi(sectionIDStr)
 	if err != nil {
 		h.logger.Errorw("invalid section ID", "error", err, "stage", "NewSectionItem.ParseInt")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid section ID"})
@@ -251,7 +251,7 @@ func (h *Handler) NewSectionItem(c *gin.Context) {
 
 func (h *Handler) GetTheory(c *gin.Context) {
 	idStr := c.Param("id")
-	theoryID, err := strconv.ParseInt(idStr, 10, 64)
+	theoryID, err := strconv.Atoi(idStr)
 	if err != nil {
 		h.logger.Errorw("invalid theory ID", "error", err, "stage", "GetTheory.ParseInt")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid theory ID"})

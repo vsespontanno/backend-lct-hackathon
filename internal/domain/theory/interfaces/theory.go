@@ -6,6 +6,6 @@ import (
 )
 
 type TheoryRepoInterface interface {
-	GetTheoryByID(ctx context.Context, id int64) (*entity.Theory, error)
+	GetTheoryByID(ctx context.Context, id int) (*entity.Theory, error)
 	CreateTheory(ctx context.Context, t *entity.Theory) error
 }

@@ -10,18 +10,18 @@ type NewSectionReq struct {
 }
 
 type NewSectionItemReq struct {
-	SectionID int64  `json:"sectionId"`
+	SectionID int    `json:"sectionId"`
 	IsTest    bool   `json:"isTest"`
 	Title     string `json:"title"`
-	ItemID    int64  `json:"itemId"`
+	ItemID    int    `json:"itemId"`
 }
 
 type GetTheoryReq struct {
-	ID int64 `json:"id"`
+	ID int `json:"id"`
 }
 
 type NewTheoryReq struct {
-	ID      int64  `json:"id"`
+	ID      int    `json:"id"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }

@@ -22,7 +22,7 @@ func NewSectionItemsRepo(db *sql.DB) *SectionItemsRepo {
 }
 
 // Получить все элементы секции по sectionId
-func (r *SectionItemsRepo) GetSectionItemsBySectionId(ctx context.Context, sectionId int64) (*[]entity.SectionItem, error) {
+func (r *SectionItemsRepo) GetSectionItemsBySectionId(ctx context.Context, sectionId int) (*[]entity.SectionItem, error) {
 	builder := r.builder.
 		Select("sectionid", "istest", "title", "itemid").
 		From("sectionitems").

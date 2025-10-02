@@ -21,7 +21,7 @@ func NewTheoryRepo(db *sql.DB) *TheoryRepo {
 }
 
 // Получить теорию по ID
-func (r *TheoryRepo) GetTheoryByID(ctx context.Context, id int64) (*entity.Theory, error) {
+func (r *TheoryRepo) GetTheoryByID(ctx context.Context, id int) (*entity.Theory, error) {
 	builder := r.builder.
 		Select("id", "title", "content").
 		From("theory").
