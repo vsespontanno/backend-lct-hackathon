@@ -17,7 +17,7 @@ func NewPrizeRepo(db *sql.DB) *PrizeRepo {
 }
 
 func (r *PrizeRepo) GetMyPrizes(ctx context.Context, userID int) (*[]entity.Prize, error) {
-	query := `SELECT p.title, p.descr, p.image_url FROM prizes p INNER JOIN user_prizes up ON p.id = up.prize_id WHERE up.user_id = $1`
+	query := `SELECT p.title, p.descr, p.type FROM prizes p INNER JOIN user_prizes up ON p.id = up.prize_id WHERE up.user_id = $1`
 
 	rows, err := r.db.QueryContext(ctx, query, userID)
 	if err != nil {
@@ -28,7 +28,7 @@ func (r *PrizeRepo) GetMyPrizes(ctx context.Context, userID int) (*[]entity.Priz
 	var prizes []entity.Prize
 	for rows.Next() {
 		var p entity.Prize
-		if err := rows.Scan(&p.Title, &p.Description, &p.ImageURL); err != nil {
+		if err := rows.Scan(&p.Title, &p.Description, &p.Type); err != nil {
 			return nil, err
 		}
 		prizes = append(prizes, p)
@@ -37,7 +37,7 @@ func (r *PrizeRepo) GetMyPrizes(ctx context.Context, userID int) (*[]entity.Priz
 }
 
 func (r *PrizeRepo) GetAvailablePrizes(ctx context.Context, id int) (*[]entity.Prize, error) {
-	query := `SELECT p.title, p.descr, p.image_url FROM prizes p LEFT JOIN user_prizes up ON p.id = up.prize_id AND up.user_id = $1 WHERE up.user_id IS NULL`
+	query := `SELECT p.title, p.descr, p.type FROM prizes p LEFT JOIN user_prizes up ON p.id = up.prize_id AND up.user_id = $1 WHERE up.user_id IS NULL`
 
 	rows, err := r.db.QueryContext(ctx, query, id)
 	if err != nil {
@@ -48,7 +48,7 @@ func (r *PrizeRepo) GetAvailablePrizes(ctx context.Context, id int) (*[]entity.P
 	var prizes []entity.Prize
 	for rows.Next() {
 		var p entity.Prize
-		if err := rows.Scan(&p.Title, &p.Description, &p.ImageURL); err != nil {
+		if err := rows.Scan(&p.Title, &p.Description, &p.Type); err != nil {
 			return nil, err
 		}
 		prizes = append(prizes, p)

@@ -46,7 +46,8 @@ func (r *UserRepo) CreateUser(ctx context.Context, id int) error {
 	builder := r.builder.
 		Insert("users").
 		Columns("id").
-		Values(id)
+		Values(id).
+		Suffix("ON CONFLICT (id) DO NOTHING")
 
 	sqlStr, args, err := builder.ToSql()
 	if err != nil {

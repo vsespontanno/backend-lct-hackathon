@@ -97,11 +97,11 @@ func (h *Handler) Register(r *gin.Engine) {
 	r.GET("/theory/:id", h.GetTheory)
 	r.POST("/theory", h.NewTheory)
 
-	r.GET("/prizes/{id}/my", h.GetMyPrizes)
-	r.POST("/prizes/{id}/available", h.GetAvailablePrizes)
+	r.GET("/prizes/:id/my", h.GetMyPrizes)
+	r.POST("/prizes/:id/available", h.GetAvailablePrizes)
 	r.POST("/pet/xp", h.PostXP)
 	r.POST("/pet/name", h.PostName)
-	r.GET("/pet/{id}", h.GetPet)
+	r.GET("/pet/:id", h.GetPet)
 
 	r.GET("/tasks/daily", h.GetDailyTasks)
 }

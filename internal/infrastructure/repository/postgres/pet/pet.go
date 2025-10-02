@@ -66,7 +66,8 @@ func (r *PetRepo) CreatePet(ctx context.Context, userID int) error {
 	builder := r.builder.
 		Insert("pets").
 		Columns("user_id", "petName", "age", "exp").
-		Values(userID, "", 0, 0, 1)
+		Values(userID, "", 0, 0).
+		Suffix("ON CONFLICT (id) DO NOTHING")
 
 	sqlStr, args, err := builder.ToSql()
 	if err != nil {

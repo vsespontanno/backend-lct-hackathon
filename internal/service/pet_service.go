@@ -34,6 +34,7 @@ func (s *PetService) SetName(ctx context.Context, name string, userID int) error
 		s.logger.Errorw("invalid name of pet", "error", ErrInvalidName, "stage", "SetName")
 		return ErrInvalidName
 	}
+
 	if _, err := s.userRepo.GetUserByID(ctx, userID); err != nil {
 		if err == sql.ErrNoRows {
 			err = s.userRepo.CreateUser(ctx, userID)
@@ -41,13 +42,16 @@ func (s *PetService) SetName(ctx context.Context, name string, userID int) error
 				s.logger.Errorw("failed to create user", "error", err, "stage", "SetName.CreateUser")
 				return err
 			}
-			err := s.petRepo.CreatePet(ctx, userID)
-			if err != nil {
-				s.logger.Errorw("failed to create pet", "error", err, "stage", "SetName.CreatePet")
-				return err
-			}
 		} else {
 			s.logger.Errorw("failed to get user", "error", err, "stage", "SetName.GetUserByID")
+			return err
+		}
+	}
+
+	if _, err := s.petRepo.GetPetByUserID(ctx, userID); err != nil {
+		err := s.petRepo.CreatePet(ctx, userID)
+		if err != nil {
+			s.logger.Errorw("failed to create pet", "error", err, "stage", "SetName.CreatePet")
 			return err
 		}
 	}

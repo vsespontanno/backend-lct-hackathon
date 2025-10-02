@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS tasks (
+    id BIGINT PRIMARY KEY,
+    title TEXT NOT NULL
+);

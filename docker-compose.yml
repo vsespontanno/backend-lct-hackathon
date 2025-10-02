@@ -40,7 +40,10 @@ services:
       dockerfile: Dockerfile
     container_name: app_hackathon
     depends_on:
-      - migrate
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     env_file:
       - .env
     ports:
@@ -52,11 +55,11 @@ services:
       dockerfile: Dockerfile.seed
     container_name: seed_hackathon
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     env_file:
       - .env
-    restart: "no" # сидер отработал и завершился
+    restart: "no"
 
 volumes:
   pgdata:

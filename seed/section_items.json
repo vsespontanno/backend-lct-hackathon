@@ -1,0 +1,14 @@
+[
+  {"itemID": 1, "sectionID": 1, "title": "Введение в финансы", "isTest": false},
+  {"itemID": 2, "sectionID": 1, "title": "Доходы и расходы", "isTest": false},
+  {"itemID": 7, "sectionID": 1, "title": "Расчет бюджета", "isTest": true},
+  {"itemID": 8, "sectionID": 1, "title": "Определение сбережений", "isTest": true},
+  {"itemID": 3, "sectionID": 2, "title": "Основы инвестиций", "isTest": false},
+  {"itemID": 4, "sectionID": 2, "title": "Риски и доходность", "isTest": false},
+  {"itemID": 9, "sectionID": 2, "title": "Инвестиционный портфель", "isTest": true},
+  {"itemID": 10, "sectionID": 2, "title": "Расчет доходности", "isTest": true},
+  {"itemID": 5, "sectionID": 3, "title": "Планирование бюджета", "isTest": false},
+  {"itemID": 6, "sectionID": 3, "title": "Контроль расходов", "isTest": false},
+  {"itemID": 11, "sectionID": 3, "title": "Создание бюджета", "isTest": true},
+  {"itemID": 12, "sectionID": 3, "title": "Анализ расходов", "isTest": true}
+]

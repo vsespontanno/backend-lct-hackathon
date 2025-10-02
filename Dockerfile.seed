@@ -10,6 +10,8 @@ RUN CGO_ENABLED=0 go build -o /app/seed_binary ./cmd/seed
 
 FROM gcr.io/distroless/base-debian12
 WORKDIR /app
+COPY .env .env
+COPY seed/ seed/
 
 COPY --from=builder /app/seed_binary /app/seed_app
 
