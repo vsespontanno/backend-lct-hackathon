@@ -6,6 +6,6 @@ import (
 )
 
 type QuizRepoInterface interface {
-	GetQuizByID(ctx context.Context, quizID int64) (*entity.Quiz, error)
+	GetQuizByID(ctx context.Context, quizID int) (*entity.Quiz, error)
 	InsertQuiz(ctx context.Context, quiz *entity.Quiz) error
 }

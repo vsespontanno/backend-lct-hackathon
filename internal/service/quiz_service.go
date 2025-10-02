@@ -18,7 +18,7 @@ func NewQuizService(repo interfaces.QuizRepoInterface, logger *zap.SugaredLogger
 }
 
 // Временные затычки
-func (s *QuizService) GetQuiz(ctx context.Context, quizID int64) (*entity.Quiz, error) {
+func (s *QuizService) GetQuiz(ctx context.Context, quizID int) (*entity.Quiz, error) {
 	quiz, err := s.repo.GetQuizByID(ctx, quizID)
 	if err != nil {
 		s.logger.Errorw("failed to get quiz", "error", err, "stage", "GetQuiz.GetQuizByID")

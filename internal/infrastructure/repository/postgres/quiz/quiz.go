@@ -25,8 +25,8 @@ func NewQuizRepo(db *sql.DB) *quizRepo {
 	}
 }
 
-func (r *quizRepo) GetQuizByID(ctx context.Context, quizID int64) (*entity.Quiz, error) {
-	sqlStr := `SELECT id, title, content, options, correct_answer FROM quizs WHERE id = $1`
+func (r *quizRepo) GetQuizByID(ctx context.Context, quizID int) (*entity.Quiz, error) {
+	sqlStr := `SELECT id, title, content, options, correct_answer FROM quiz WHERE id = $1`
 
 	var quiz entity.Quiz
 	var options pq.StringArray
@@ -45,7 +45,7 @@ func (r *quizRepo) GetQuizByID(ctx context.Context, quizID int64) (*entity.Quiz,
 }
 
 func (r *quizRepo) InsertQuiz(ctx context.Context, quiz *entity.Quiz) error {
-	sqlStr := `INSERT INTO quizs (title, content, options, correct_answer) VALUES ($1, $2, $3, $4)`
+	sqlStr := `INSERT INTO quiz (title, content, options, correct_answer) VALUES ($1, $2, $3, $4)`
 	_, err := r.db.ExecContext(ctx, sqlStr, quiz.Title, quiz.Content, pq.Array(quiz.Options), quiz.CorrectAnswer)
 	return err
 }

@@ -24,7 +24,7 @@ type PrizeServiceInterface interface {
 }
 
 type QuizServiceInterface interface {
-	GetQuiz(ctx context.Context, quizID int64) (*quizEntity.Quiz, error)
+	GetQuiz(ctx context.Context, quizID int) (*quizEntity.Quiz, error)
 }
 
 type PetServiceInterface interface {
@@ -98,7 +98,7 @@ func (h *Handler) Register(r *gin.Engine) {
 	r.POST("/theory", h.NewTheory)
 
 	r.GET("/prizes/:id/my", h.GetMyPrizes)
-	r.POST("/prizes/:id/available", h.GetAvailablePrizes)
+	r.GET("/prizes/:id/available", h.GetAvailablePrizes)
 	r.POST("/pet/xp", h.PostXP)
 	r.POST("/pet/name", h.PostName)
 	r.GET("/pet/:id", h.GetPet)
@@ -349,7 +349,7 @@ func (h *Handler) GetAvailablePrizes(c *gin.Context) {
 
 func (h *Handler) GetQuiz(c *gin.Context) {
 	quizIDStr := c.Param("id")
-	quizID, err := strconv.ParseInt(quizIDStr, 10, 64)
+	quizID, err := strconv.Atoi(quizIDStr)
 	if err != nil {
 		h.logger.Errorw("invalid quiz ID", "error", err, "stage", "GetQuiz.ParseInt")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid quiz ID"})
