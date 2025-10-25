@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-hackathon
+  labels:
+    app: backend-hackathon
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: backend-hackathon
+  template:
+    metadata:
+      labels:
+        app: backend-hackathon
+    spec:
+      containers:
+        - name: backend
+          image: vsespontanno/backend-hackathon:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secret
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+          

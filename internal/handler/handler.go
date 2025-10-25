@@ -209,7 +209,7 @@ func (h *Handler) GetSectionItems(c *gin.Context) {
 	sectionIDStr := c.Param("id")
 	sectionID, err := strconv.Atoi(sectionIDStr)
 	if err != nil {
-		h.logger.Errorw("invalid section ID", "error", err, "stage", "GetSectionItems.ParseInt")
+		h.logger.Errorw("invalid section ID", "error", err, "stage", "GetSectionItems.Atoi")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid section ID"})
 		return
 	}
@@ -226,7 +226,7 @@ func (h *Handler) NewSectionItem(c *gin.Context) {
 	sectionIDStr := c.Param("id")
 	sectionID, err := strconv.Atoi(sectionIDStr)
 	if err != nil {
-		h.logger.Errorw("invalid section ID", "error", err, "stage", "NewSectionItem.ParseInt")
+		h.logger.Errorw("invalid section ID", "error", err, "stage", "NewSectionItem.Atoi")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid section ID"})
 		return
 	}
@@ -253,7 +253,7 @@ func (h *Handler) GetTheory(c *gin.Context) {
 	idStr := c.Param("id")
 	theoryID, err := strconv.Atoi(idStr)
 	if err != nil {
-		h.logger.Errorw("invalid theory ID", "error", err, "stage", "GetTheory.ParseInt")
+		h.logger.Errorw("invalid theory ID", "error", err, "stage", "GetTheory.Atoi")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid theory ID"})
 		return
 	}
@@ -351,7 +351,7 @@ func (h *Handler) GetQuiz(c *gin.Context) {
 	quizIDStr := c.Param("id")
 	quizID, err := strconv.Atoi(quizIDStr)
 	if err != nil {
-		h.logger.Errorw("invalid quiz ID", "error", err, "stage", "GetQuiz.ParseInt")
+		h.logger.Errorw("invalid quiz ID", "error", err, "stage", "GetQuiz.Atoi")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid quiz ID"})
 		return
 	}
