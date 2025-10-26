@@ -9,5 +9,6 @@
             "icon": "terminal-linux"
         }
     },
-    "terminal.integrated.defaultProfile.linux": "zsh"
+    "terminal.integrated.defaultProfile.linux": "zsh",
+    "ansible.python.interpreterPath": "/bin/python3"
 }

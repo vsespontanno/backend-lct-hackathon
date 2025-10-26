@@ -1,0 +1,24 @@
+---
+- name: Configure application containers
+  hosts: servers
+  become: true
+  tasks:
+    - name: Ensure curl is installed
+      ansible.builtin.apt:
+        name: curl
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Replace nginx config directly in container
+      ansible.builtin.shell: |
+        docker cp ./nginx.conf nginx:/etc/nginx/nginx.conf
+      notify: Restart nginx
+
+    - name: Run DB initialization script inside Postgres container
+      ansible.builtin.command: docker exec postgres psql -U admin -d appdb -c "CREATE TABLE IF NOT EXISTS tasks (id BIGINT PRIMARY KEY, title TEXT NOT NULL);"
+      changed_when: false
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.command: docker restart nginx
+      changed_when: false
